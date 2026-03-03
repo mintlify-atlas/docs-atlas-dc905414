@@ -1,80 +1,446 @@
 ---
-title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+title: Quick Start
+description: Get started with WorldStereo for camera-guided video generation and 3D reconstruction
 ---
 
-## Get started in three steps
+<Warning>
+  WorldStereo code and model weights are not yet released. This guide describes the expected workflow once the code becomes available.
+</Warning>
 
-Get your documentation site running locally and make your first customization.
+## Prerequisites
 
-### Step 1: Set up your local environment
+Before starting, ensure you have:
 
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
+- Completed the [installation](/installation) steps
+- A CUDA-capable GPU with sufficient VRAM (24GB+ recommended)
+- Input images (perspective or panoramic)
+- Camera trajectory information (if doing controlled generation)
+
+## Basic Workflow
+
+WorldStereo's workflow consists of three main stages:
+
+<Steps>
+  <Step title="Prepare Input Data">
+    Prepare your input images and camera trajectories
+  </Step>
+  <Step title="Generate Multi-View Video">
+    Use WorldStereo to generate geometrically consistent videos with camera control
+  </Step>
+  <Step title="3D Reconstruction">
+    Reconstruct 3D scenes from the generated multi-view consistent videos
+  </Step>
+</Steps>
+
+## Camera-Guided Video Generation
+
+### Basic Usage
+
+Generate a video with camera control from a single image:
+
+```python
+import worldstereo
+from worldstereo import WorldStereoModel
+from worldstereo.utils import load_image, define_camera_trajectory
+
+# Initialize the model
+model = WorldStereoModel.from_pretrained("worldstereo-base")
+
+# Load input image
+input_image = load_image("path/to/input/image.jpg")
+
+# Define camera trajectory
+camera_trajectory = define_camera_trajectory(
+    trajectory_type="orbit",
+    radius=5.0,
+    num_frames=60,
+    height=1.5
+)
+
+# Generate video with camera control
+output_video = model.generate(
+    image=input_image,
+    camera_trajectory=camera_trajectory,
+    num_inference_steps=50,
+    guidance_scale=7.5
+)
+
+# Save the generated video
+output_video.save("output/generated_video.mp4")
+```
+
+<Info>
+  The actual API may differ. This is a conceptual example based on the framework's architecture.
+</Info>
+
+### Perspective vs Panoramic Input
+
+WorldStereo supports both perspective and panoramic images:
+
+<CodeGroup>
+
+```python Perspective Image
+# Standard perspective image input
+input_image = load_image("scene.jpg", image_type="perspective")
+
+output = model.generate(
+    image=input_image,
+    camera_trajectory=trajectory,
+    input_type="perspective"
+)
+```
+
+```python Panoramic Image
+# 360° panoramic image input
+input_image = load_image("panorama.jpg", image_type="panoramic")
+
+output = model.generate(
+    image=input_image,
+    camera_trajectory=trajectory,
+    input_type="panoramic"
+)
+```
+
+</CodeGroup>
+
+## Using Geometric Memory Modules
+
+### Global-Geometric Memory
+
+The global-geometric memory maintains point clouds for structural consistency:
+
+```python
+# Configure global-geometric memory
+model.configure_global_memory(
+    enable=True,
+    point_cloud_resolution=1024,
+    update_frequency="incremental",
+    structural_prior_strength=0.8
+)
+
+# Generate with structural guidance
+output = model.generate(
+    image=input_image,
+    camera_trajectory=trajectory,
+    use_global_memory=True
+)
+```
+
+### Spatial-Stereo Memory
+
+The spatial-stereo memory provides fine-grained detail consistency:
+
+```python
+# Configure spatial-stereo memory
+model.configure_spatial_memory(
+    enable=True,
+    correspondence_threshold=0.9,
+    attention_constraint="strong",
+    memory_bank_size=2048
+)
+
+# Generate with fine-grained control
+output = model.generate(
+    image=input_image,
+    camera_trajectory=trajectory,
+    use_spatial_memory=True
+)
+```
+
+## 3D Scene Reconstruction
+
+Once you've generated multi-view consistent videos, reconstruct the 3D scene:
+
+```python
+from worldstereo.reconstruction import reconstruct_3d
+
+# Generate video first
+video = model.generate(
+    image=input_image,
+    camera_trajectory=trajectory
+)
+
+# Reconstruct 3D scene
+point_cloud, mesh = reconstruct_3d(
+    video=video,
+    camera_trajectory=trajectory,
+    method="neural_reconstruction",
+    resolution="high"
+)
+
+# Export results
+point_cloud.save("output/scene.ply")
+mesh.save("output/scene.obj")
+```
+
+<Info>
+  The reconstruction module leverages the geometric consistency from both memory modules to produce high-quality 3D outputs.
+</Info>
+
+## Advanced Configuration
+
+### Custom Camera Trajectories
+
+Define complex camera movements:
+
+```python
+import numpy as np
+from worldstereo.camera import CameraTrajectory
+
+# Define custom camera poses
+num_frames = 60
+camera_poses = []
+
+for i in range(num_frames):
+    # Custom pose calculation
+    position = np.array([np.cos(i * 2 * np.pi / num_frames) * 5,
+                         1.5,
+                         np.sin(i * 2 * np.pi / num_frames) * 5])
     
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
+    # Look at center
+    look_at = np.array([0, 0, 0])
     
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
+    camera_poses.append({
+        'position': position,
+        'look_at': look_at,
+        'up': np.array([0, 1, 0])
+    })
 
-### Step 2: Deploy your changes
+trajectory = CameraTrajectory(poses=camera_poses)
+```
 
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
-    
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
+### Batch Processing
 
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
+Process multiple scenes efficiently:
 
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
+```python
+from worldstereo.utils import batch_process
 
-### Step 3: Go live
+# Prepare batch of images
+images = [
+    load_image("scene1.jpg"),
+    load_image("scene2.jpg"),
+    load_image("scene3.jpg")
+]
 
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
+# Define trajectories for each
+trajectories = [
+    define_camera_trajectory(trajectory_type="orbit", radius=5.0),
+    define_camera_trajectory(trajectory_type="forward", distance=10.0),
+    define_camera_trajectory(trajectory_type="spiral", height_range=(0, 3))
+]
 
-## Next steps
+# Batch generate
+results = batch_process(
+    model=model,
+    images=images,
+    trajectories=trajectories,
+    batch_size=1  # Adjust based on GPU memory
+)
+```
 
-Now that you have your docs running, explore these key features:
+## Generation Parameters
 
-<CardGroup cols={2}>
+Key parameters to tune for optimal results:
 
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
-
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
-
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
-
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
-
-</CardGroup>
+| Parameter | Description | Default | Range |
+|-----------|-------------|---------|-------|
+| `num_inference_steps` | Diffusion denoising steps | 50 | 20-100 |
+| `guidance_scale` | Classifier-free guidance strength | 7.5 | 1.0-15.0 |
+| `structural_prior_strength` | Global memory influence | 0.8 | 0.0-1.0 |
+| `correspondence_threshold` | Spatial memory matching | 0.9 | 0.5-1.0 |
+| `memory_bank_size` | Detail memory capacity | 2048 | 512-4096 |
 
 <Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
+  Higher inference steps and guidance scales improve quality but increase computation time. Balance based on your needs.
 </Note>
+
+## Example Use Cases
+
+### Use Case 1: Virtual Tour Generation
+
+Generate a virtual tour from a single room photograph:
+
+```python
+# Load room image
+room_image = load_image("room.jpg")
+
+# Create walkthrough trajectory
+walkthrough = define_camera_trajectory(
+    trajectory_type="walkthrough",
+    waypoints=[
+        {"position": [0, 1.5, 0], "look_at": [5, 1.5, 0]},
+        {"position": [5, 1.5, 0], "look_at": [5, 1.5, 5]},
+        {"position": [5, 1.5, 5], "look_at": [0, 1.5, 5]}
+    ],
+    num_frames=180
+)
+
+# Generate consistent tour
+tour_video = model.generate(
+    image=room_image,
+    camera_trajectory=walkthrough,
+    use_global_memory=True,
+    use_spatial_memory=True
+)
+```
+
+### Use Case 2: Product Visualization
+
+Create 360° product views for e-commerce:
+
+```python
+# Load product image
+product_image = load_image("product.jpg")
+
+# Orbit around product
+orbit_trajectory = define_camera_trajectory(
+    trajectory_type="orbit",
+    radius=2.0,
+    num_frames=120,
+    height=1.0,
+    complete_rotation=True
+)
+
+# Generate product video
+product_video = model.generate(
+    image=product_image,
+    camera_trajectory=orbit_trajectory
+)
+
+# Reconstruct 3D model
+product_mesh = reconstruct_3d(product_video, orbit_trajectory)
+product_mesh.save("product_3d_model.obj")
+```
+
+### Use Case 3: Scene Expansion from Panorama
+
+Expand navigable space from a 360° panorama:
+
+```python
+# Load panoramic image
+panorama = load_image("360_panorama.jpg", image_type="panoramic")
+
+# Generate exploration trajectory
+exploration = define_camera_trajectory(
+    trajectory_type="free_exploration",
+    bounds={"x": [-10, 10], "z": [-10, 10]},
+    height=1.7,
+    num_frames=300
+)
+
+# Generate explorable space
+space_video = model.generate(
+    image=panorama,
+    camera_trajectory=exploration,
+    input_type="panoramic"
+)
+```
+
+## Performance Optimization
+
+### Memory Management
+
+Optimize GPU memory usage:
+
+```python
+# Enable mixed precision
+model.enable_mixed_precision(dtype="float16")
+
+# Adjust memory bank sizes
+model.configure_global_memory(point_cloud_resolution=512)  # Reduce if needed
+model.configure_spatial_memory(memory_bank_size=1024)  # Reduce if needed
+
+# Process in chunks for long videos
+output = model.generate(
+    image=input_image,
+    camera_trajectory=long_trajectory,
+    chunk_size=30  # Process 30 frames at a time
+)
+```
+
+### Speed vs Quality Tradeoffs
+
+```python
+# Fast generation (lower quality)
+fast_output = model.generate(
+    image=input_image,
+    camera_trajectory=trajectory,
+    num_inference_steps=20,
+    guidance_scale=5.0,
+    resolution=(512, 512)
+)
+
+# High quality (slower)
+quality_output = model.generate(
+    image=input_image,
+    camera_trajectory=trajectory,
+    num_inference_steps=100,
+    guidance_scale=10.0,
+    resolution=(1024, 1024)
+)
+```
+
+## Troubleshooting
+
+### Common Issues
+
+<AccordionGroup>
+  <Accordion title="Inconsistent geometry across views">
+    Increase structural_prior_strength and ensure both memory modules are enabled:
+    
+    ```python
+    model.configure_global_memory(structural_prior_strength=0.9)
+    model.configure_spatial_memory(correspondence_threshold=0.95)
+    ```
+  </Accordion>
+
+  <Accordion title="Out of memory errors">
+    Reduce memory requirements:
+    - Lower resolution
+    - Reduce chunk_size
+    - Decrease memory_bank_size
+    - Enable mixed precision (float16)
+  </Accordion>
+
+  <Accordion title="Poor 3D reconstruction quality">
+    Ensure sufficient camera coverage and geometric consistency:
+    - Use more diverse camera poses
+    - Enable both memory modules
+    - Increase correspondence_threshold
+    - Use higher resolution generation
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card
+    title="Video Generation Guide"
+    icon="video"
+    href="/features/video-generation"
+  >
+    Deep dive into camera-guided video generation
+  </Card>
+  <Card
+    title="3D Reconstruction"
+    icon="cube"
+    href="/features/3d-reconstruction"
+  >
+    Learn advanced reconstruction techniques
+  </Card>
+  <Card
+    title="API Reference"
+    icon="code"
+    href="/api-reference"
+  >
+    Explore the complete API documentation
+  </Card>
+  <Card
+    title="Examples"
+    icon="images"
+    href="/examples"
+  >
+    Browse more usage examples
+  </Card>
+</CardGroup>

@@ -1,0 +1,258 @@
+---
+title: 3D Scene Reconstruction
+description: Reconstruct high-quality 3D scenes from WorldStereo-generated videos
+---
+
+WorldStereo bridges video generation and 3D reconstruction, enabling high-quality scene reconstruction from generated multi-view-consistent videos. This guide explains the reconstruction workflow and capabilities.
+
+## Overview
+
+Traditional video diffusion models produce visually appealing videos but struggle to reconstruct consistent 3D scenes due to geometric inconsistencies. WorldStereo solves this by generating videos that are inherently designed for 3D reconstruction.
+
+<Note>
+WorldStereo's geometric memory modules ensure that generated videos maintain the 3D consistency required for accurate reconstruction.
+</Note>
+
+## Why WorldStereo for 3D Reconstruction
+
+### Key Advantages
+
+**Multi-View Consistency**
+- Videos maintain geometric coherence across all viewpoints
+- Content appears consistent when viewed from different camera angles
+- Enables reliable feature matching and triangulation
+
+**Known Camera Parameters**
+- Precise camera control means exact camera poses are available
+- No need for camera pose estimation from generated content
+- Direct use of input camera trajectories in reconstruction pipeline
+
+**Geometric Memory Integration**
+- Point cloud updates during generation provide structural priors
+- 3D correspondence constraints ensure spatial consistency
+- Implicit 3D understanding embedded in generated frames
+
+<Info>
+Unlike standard VDMs that generate visually plausible but geometrically inconsistent videos, WorldStereo ensures reconstruction-ready output.
+</Info>
+
+## Reconstruction Workflow
+
+<Steps>
+  <Step title="Generate Multi-View Video">
+    Use WorldStereo to generate videos with camera-controlled trajectories. Define camera paths that provide good coverage of your scene from multiple viewpoints.
+  </Step>
+  
+  <Step title="Extract Frames">
+    Extract individual frames from the generated video. These frames serve as multi-view images with known camera parameters.
+  </Step>
+  
+  <Step title="Feature Extraction and Matching">
+    Process frames to extract features and establish correspondences between views. WorldStereo's multi-view consistency ensures reliable matching.
+  </Step>
+  
+  <Step title="3D Reconstruction">
+    Apply reconstruction algorithms using the matched features and known camera parameters to generate 3D geometry (point clouds, meshes, or neural representations).
+  </Step>
+  
+  <Step title="Refinement and Post-Processing">
+    Optionally refine the reconstruction using the geometric memory information from WorldStereo or traditional reconstruction refinement techniques.
+  </Step>
+</Steps>
+
+## Reconstruction Capabilities
+
+### Point Cloud Generation
+
+WorldStereo's global-geometric memory maintains incrementally updated point clouds:
+
+- **Dense Point Clouds**: Reconstruct detailed 3D point representations of scenes
+- **Structural Accuracy**: Point clouds respect the geometric priors from generation
+- **Incremental Updates**: Leverage the framework's internal point cloud updates
+
+<Tip>
+The point clouds maintained during generation can serve as initialization for reconstruction pipelines, providing a strong geometric prior.
+</Tip>
+
+### Mesh Reconstruction
+
+Convert multi-view videos into 3D meshes:
+
+- **Surface Reconstruction**: Generate continuous mesh surfaces from reconstructed geometry
+- **Texture Mapping**: Use generated video frames to apply high-quality textures
+- **Geometric Detail**: Fine-grained features preserved through spatial-stereo memory
+
+### Neural Scene Representations
+
+WorldStereo outputs are suitable for neural reconstruction methods:
+
+- **NeRF-Compatible**: Multi-view consistency enables Neural Radiance Field training
+- **3D Gaussian Splatting**: Known cameras and consistent views support Gaussian-based representations
+- **Implicit Surface Learning**: Can be used with neural implicit surface methods
+
+<Warning>
+While WorldStereo generates high-quality multi-view content, reconstruction quality still depends on camera trajectory design and scene coverage.
+</Warning>
+
+## Geometric Memory Modules
+
+### Global-Geometric Memory
+
+Provides coarse structural priors for reconstruction:
+
+```
+Input Scene → Point Cloud Initialization → Incremental Updates → Coarse 3D Structure
+```
+
+- Maintains global scene structure throughout generation
+- Ensures large-scale geometric consistency
+- Provides initialization for reconstruction algorithms
+
+### Spatial-Stereo Memory
+
+Enforces fine-grained geometric constraints:
+
+```
+Multi-View Frames → 3D Correspondence → Attention Constraints → Consistent Details
+```
+
+- Constrains attention based on stereo relationships
+- Preserves fine-grained geometric details
+- Ensures local feature consistency across views
+
+<Info>
+The combination of global and spatial memory modules enables reconstruction at multiple scales - from overall scene structure to fine details.
+</Info>
+
+## Camera Trajectory Design for Reconstruction
+
+### Coverage Principles
+
+Design camera trajectories that maximize scene coverage:
+
+**Circular Orbits**
+- Orbit around objects for 360-degree coverage
+- Maintain consistent distance from subject
+- Ideal for object-centric reconstruction
+
+**Grid Patterns**
+- Cover large scenes with systematic grid paths
+- Ensure overlap between adjacent views
+- Suitable for environment reconstruction
+
+**Forward-Backward Passes**
+- Move through scenes with forward and return passes
+- Provide depth information through motion parallax
+- Good for corridor or path-like environments
+
+<Tip>
+Ensure sufficient overlap between views (typically 60-80%) to enable reliable feature matching and reconstruction.
+</Tip>
+
+### Baseline Considerations
+
+- **Too Narrow**: Insufficient depth information, poor reconstruction accuracy
+- **Too Wide**: Difficult feature matching, potential consistency issues
+- **Optimal Range**: Depends on scene scale; balance between depth accuracy and matching reliability
+
+## Reconstruction Quality Factors
+
+### Input Quality
+
+- **Initial Image**: Higher quality inputs lead to better reconstructions
+- **Resolution**: Higher resolution enables finer geometric detail capture
+- **Scene Characteristics**: Well-textured scenes reconstruct better than textureless surfaces
+
+### Camera Parameters
+
+- **Trajectory Smoothness**: Smooth camera motion improves temporal consistency
+- **View Coverage**: More comprehensive coverage yields more complete reconstructions
+- **Pose Accuracy**: Precise camera control ensures accurate geometric reconstruction
+
+### Generation Parameters
+
+- **Video Length**: Longer videos provide more views but may accumulate drift
+- **Frame Rate**: Balance between computational cost and reconstruction density
+- **Consistency Settings**: Higher consistency requirements improve reconstruction quality
+
+<Note>
+WorldStereo's effectiveness has been demonstrated across 3D reconstruction benchmarks, showing superior performance compared to standard VDM-based approaches.
+</Note>
+
+## Use Cases
+
+### Virtual Scene Creation
+
+Generate and reconstruct virtual 3D environments:
+
+- Start from a single perspective or panoramic image
+- Generate multi-view videos with designed camera paths
+- Reconstruct complete 3D scenes for virtual reality or gaming
+
+### Content Generation for 3D Assets
+
+Create 3D assets from 2D imagery:
+
+- Input concept images or photographs
+- Generate multi-view consistent visualizations
+- Reconstruct 3D models for digital content creation
+
+### Scene Completion and Exploration
+
+Explore and reconstruct scenes from limited initial views:
+
+- Start with partial scene information
+- Generate views from unexplored angles
+- Reconstruct complete 3D representations
+
+### Training Data Generation
+
+Produce synthetic multi-view datasets:
+
+- Generate diverse camera viewpoints of scenes
+- Create ground-truth camera parameters automatically
+- Use for training other 3D vision models
+
+## Integration with Reconstruction Pipelines
+
+WorldStereo outputs can be integrated with existing reconstruction frameworks:
+
+**COLMAP**
+- Use generated frames as input images
+- Provide known camera parameters to skip SfM pose estimation
+- Reconstruct sparse and dense 3D models
+
+**NeRF/3DGS Frameworks**
+- Train neural representations using multi-view frames
+- Leverage known camera poses for faster convergence
+- Achieve high-quality novel view synthesis and geometry
+
+**Mesh Reconstruction Tools**
+- Process multi-view frames with traditional MVS pipelines
+- Apply surface reconstruction algorithms to point clouds
+- Generate textured 3D meshes
+
+<Tip>
+The known camera parameters from WorldStereo eliminate the need for structure-from-motion preprocessing, streamlining the reconstruction pipeline.
+</Tip>
+
+## Best Practices
+
+1. **Plan Camera Trajectories**: Design paths that provide good scene coverage before generation
+2. **Validate Consistency**: Check multi-view consistency in generated videos before reconstruction
+3. **Use High-Quality Inputs**: Start with clear, well-exposed images for best results
+4. **Leverage Geometric Memory**: Consider using internal point cloud representations as reconstruction initialization
+5. **Iterative Refinement**: Use initial reconstructions to guide additional view generation if needed
+
+## Expected Results
+
+WorldStereo demonstrates high-quality 3D reconstruction capabilities:
+
+- **Geometric Accuracy**: Superior accuracy compared to reconstructions from standard VDM outputs
+- **Completeness**: More complete reconstructions due to multi-view consistency
+- **Visual Fidelity**: High-quality textures and fine-grained details preserved
+- **Efficiency**: Known camera parameters reduce computational overhead
+
+<Info>
+Extensive experiments across 3D reconstruction benchmarks validate WorldStereo's effectiveness as a bridge between video generation and scene reconstruction.
+</Info>

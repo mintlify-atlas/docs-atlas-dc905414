@@ -1,0 +1,156 @@
+---
+title: Camera-Guided Video Generation
+description: Learn how to generate multi-view-consistent videos with precise camera control using WorldStereo
+---
+
+WorldStereo enables camera-guided video generation that produces multi-view-consistent outputs under precise camera control. This guide explains how the framework achieves this through geometric memory modules.
+
+## Overview
+
+Traditional Video Diffusion Models (VDMs) struggle with camera controllability and often produce inconsistent content when viewed from different camera trajectories. WorldStereo addresses these challenges by bridging camera control and geometric consistency.
+
+<Info>
+WorldStereo generates videos that maintain 3D consistency across multiple viewpoints, making them suitable for downstream 3D reconstruction tasks.
+</Info>
+
+## Key Capabilities
+
+<Steps>
+  <Step title="Precise Camera Control">
+    WorldStereo accepts camera trajectory parameters as input, allowing you to define exact camera paths through your scene. The framework translates these trajectories into consistent video frames that respect the specified viewpoints.
+  </Step>
+  
+  <Step title="Multi-View Consistency">
+    Unlike standard VDMs, WorldStereo ensures that content remains consistent when viewed from different camera angles. This is achieved through geometric memory modules that maintain spatial coherence across frames.
+  </Step>
+  
+  <Step title="Flexible Input Support">
+    The framework supports both perspective and panoramic images as starting points, enabling diverse scene generation workflows.
+  </Step>
+</Steps>
+
+## How It Works
+
+### Global-Geometric Memory
+
+The global-geometric memory module provides coarse structural guidance:
+
+- **Incremental Point Cloud Updates**: As video generation progresses, the system maintains and updates a point cloud representation of the scene
+- **Structural Priors**: These point clouds inject geometric understanding into the generation process, ensuring spatial consistency
+- **Coarse-Level Control**: Handles overall scene structure and large-scale geometric relationships
+
+<Tip>
+The global-geometric memory enables precise camera control by maintaining a consistent 3D understanding of the scene throughout generation.
+</Tip>
+
+### Spatial-Stereo Memory
+
+The spatial-stereo memory module handles fine-grained details:
+
+- **3D Correspondence Constraints**: Uses stereo relationships to constrain attention mechanisms
+- **Memory Bank System**: Stores and retrieves fine-grained visual features based on 3D correspondences
+- **Focused Attention**: Limits the model's attention receptive fields to geometrically relevant regions
+
+<Note>
+The combination of global and spatial memory modules allows WorldStereo to balance both structural consistency and visual detail quality.
+</Note>
+
+## Use Cases
+
+### Novel View Synthesis
+
+Generate new camera viewpoints of a scene while maintaining consistency:
+
+- Define a camera trajectory through your scene
+- WorldStereo generates frames that respect the geometric relationships between views
+- Output maintains consistency even for complex camera motions
+
+### Multi-View Video Generation
+
+Create multiple videos of the same scene from different perspectives:
+
+- Generate videos from various camera angles
+- All viewpoints remain geometrically consistent with each other
+- Suitable for creating training data for 3D tasks
+
+### Camera Path Planning
+
+Explore scenes through controlled camera movements:
+
+- Circular orbits around objects
+- Forward/backward tracking shots
+- Custom complex camera trajectories
+
+<Warning>
+Camera trajectories should be smooth and continuous to achieve the best quality results. Abrupt camera movements may reduce consistency.
+</Warning>
+
+## Architecture Benefits
+
+### Efficiency Through Control Branches
+
+WorldStereo uses a flexible control branch-based architecture:
+
+- **No Joint Training Required**: Benefits from pre-trained VDM backbones without expensive joint training
+- **Distribution Matching**: Distilled from existing VDMs for efficient adaptation
+- **Modular Design**: Geometric memory modules can be added without retraining the entire model
+
+### Quality Improvements
+
+Compared to standard VDMs, WorldStereo provides:
+
+- **Better Camera Adherence**: Generated videos closely follow specified camera trajectories
+- **Improved Consistency**: Multi-view outputs maintain geometric and photometric consistency
+- **3D Reconstruction Quality**: Outputs are suitable for high-quality 3D reconstruction
+
+## Workflow Overview
+
+<Steps>
+  <Step title="Prepare Input">
+    Start with either a perspective image or a panoramic image as your scene initialization.
+  </Step>
+  
+  <Step title="Define Camera Trajectory">
+    Specify the camera path you want to generate. This includes position, orientation, and movement parameters for each frame.
+  </Step>
+  
+  <Step title="Generate Video">
+    WorldStereo processes your inputs through its geometric memory modules to generate multi-view-consistent video frames.
+  </Step>
+  
+  <Step title="Verify Consistency">
+    Review the generated video to ensure camera control accuracy and multi-view consistency meet your requirements.
+  </Step>
+</Steps>
+
+## Best Practices
+
+<Tip>
+For best results, start with high-quality input images that clearly define the scene you want to explore.
+</Tip>
+
+- **Camera Trajectories**: Keep camera movements smooth and avoid extreme rotations or jumps
+- **Scene Complexity**: Start with simpler scenes to understand the framework's behavior before tackling complex environments
+- **Input Quality**: Higher quality input images will produce better geometric understanding and consistency
+- **Trajectory Length**: Balance video length with consistency requirements - longer videos may accumulate small drift
+
+## Integration with 3D Reconstruction
+
+The camera-guided videos generated by WorldStereo are specifically designed to facilitate 3D reconstruction:
+
+- Known camera parameters enable precise geometric reconstruction
+- Multi-view consistency ensures reliable feature matching
+- Geometric memory modules provide implicit 3D structure information
+
+<Info>
+See the [3D Reconstruction guide](/guides/3d-reconstruction) to learn how to use generated videos for high-quality scene reconstruction.
+</Info>
+
+## Expected Performance
+
+WorldStereo demonstrates effectiveness across camera-guided video generation benchmarks:
+
+- **Trajectory Accuracy**: Precise adherence to specified camera paths
+- **Visual Quality**: High-fidelity video generation comparable to state-of-the-art VDMs
+- **Geometric Consistency**: Superior multi-view consistency compared to baseline approaches
+- **Efficiency**: Faster than joint-training approaches due to control branch architecture

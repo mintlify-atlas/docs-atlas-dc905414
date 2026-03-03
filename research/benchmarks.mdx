@@ -1,0 +1,241 @@
+---
+title: Benchmarks & Results
+description: Performance evaluation on video generation and 3D reconstruction benchmarks
+icon: chart-line
+---
+
+## Overview
+
+WorldStereo has been extensively evaluated across both camera-guided video generation and 3D reconstruction benchmarks, demonstrating state-of-the-art performance in multi-view consistency and geometric accuracy.
+
+<Info>
+  Experiments validate WorldStereo's effectiveness as a powerful world model capable of tackling diverse scene generation tasks with high-fidelity 3D results.
+</Info>
+
+## Evaluation Domains
+
+WorldStereo's performance is assessed across two primary domains:
+
+<CardGroup cols={2}>
+  <Card title="Camera-Guided Video Generation" icon="video">
+    Evaluates the quality and controllability of generated videos following specified camera trajectories
+  </Card>
+  
+  <Card title="3D Scene Reconstruction" icon="cube">
+    Measures the geometric accuracy and completeness of reconstructed 3D scenes from generated multi-view videos
+  </Card>
+</CardGroup>
+
+## Camera-Guided Video Generation
+
+### Key Metrics
+
+Camera-guided video generation performance is evaluated using multiple complementary metrics:
+
+#### Visual Quality Metrics
+
+- **FVD (Fréchet Video Distance)**: Measures overall video quality and temporal consistency
+- **FID (Fréchet Inception Distance)**: Evaluates per-frame image quality
+- **LPIPS (Learned Perceptual Image Patch Similarity)**: Assesses perceptual similarity to ground truth
+
+#### Camera Control Metrics
+
+- **Camera Trajectory Accuracy**: Measures adherence to specified camera paths
+- **Pose Estimation Error**: Evaluates the recoverability of camera poses from generated videos
+
+#### Multi-View Consistency Metrics
+
+- **Cross-View Consistency**: Measures geometric consistency between different viewpoints
+- **Temporal Stability**: Evaluates smoothness and coherence across video frames
+
+<Note>
+  WorldStereo demonstrates superior performance in multi-view consistency metrics compared to baseline VDM approaches, thanks to its geometric memory modules.
+</Note>
+
+### Benchmark Datasets
+
+Evaluation is conducted on standard video generation datasets:
+
+<CardGroup cols={2}>
+  <Card title="Perspective Scenes" icon="camera">
+    Standard benchmark datasets featuring conventional perspective camera views
+  </Card>
+  
+  <Card title="Panoramic Scenes" icon="panorama">
+    360-degree panoramic scene datasets for immersive environment evaluation
+  </Card>
+</CardGroup>
+
+### Performance Highlights
+
+#### Precise Camera Control
+
+- **Global-Geometric Memory**: Enables accurate following of complex camera trajectories
+- **Trajectory Flexibility**: Supports diverse camera motion patterns (orbiting, forward motion, complex paths)
+- **Pose Consistency**: Generated videos maintain geometric consistency with input camera poses
+
+#### Visual Quality
+
+- **VDM Backbone Benefits**: Inherits high-quality generation from foundational Video Diffusion Models
+- **Detail Preservation**: Spatial-stereo memory maintains fine-grained details across views
+- **Temporal Coherence**: Smooth transitions between frames without flickering or artifacts
+
+<Info>
+  The distribution matching approach allows WorldStereo to maintain the visual quality of state-of-the-art VDMs while adding precise geometric control.
+</Info>
+
+## 3D Reconstruction Benchmarks
+
+### Reconstruction Pipeline
+
+WorldStereo's 3D reconstruction capability is evaluated using generated multi-view videos:
+
+1. **Multi-View Generation**: Generate videos from controlled camera trajectories
+2. **Feature Matching**: Extract and match features across generated views
+3. **Structure from Motion**: Recover camera poses and sparse point clouds
+4. **Dense Reconstruction**: Build dense 3D models from multi-view consistency
+
+### Evaluation Metrics
+
+#### Geometric Accuracy
+
+- **Chamfer Distance**: Measures point cloud similarity to ground truth geometry
+- **Point-to-Mesh Distance**: Evaluates accuracy of reconstructed mesh surfaces
+- **Normal Consistency**: Assesses correctness of surface orientations
+
+#### Completeness
+
+- **Coverage**: Percentage of ground truth geometry successfully reconstructed
+- **Hole Detection**: Identifies gaps or missing regions in reconstruction
+- **Outlier Ratio**: Measures spurious geometric elements
+
+#### Multi-View Consistency
+
+- **Reprojection Error**: Measures consistency of 3D points across different views
+- **Depth Consistency**: Evaluates agreement of depth estimates from multiple viewpoints
+- **Photometric Consistency**: Assesses color/appearance consistency across views
+
+<Note>
+  WorldStereo's geometric memory modules specifically target multi-view consistency, resulting in superior 3D reconstruction quality compared to standard video generation models.
+</Note>
+
+### Benchmark Datasets
+
+<CardGroup cols={2}>
+  <Card title="Synthetic Datasets" icon="shapes">
+    Controlled environments with ground truth 3D geometry for quantitative evaluation
+  </Card>
+  
+  <Card title="Real-World Scenes" icon="earth">
+    Challenging real-world scenarios to test generalization and robustness
+  </Card>
+</CardGroup>
+
+### Performance Highlights
+
+#### High-Fidelity 3D Results
+
+- **Geometric Memory Integration**: Both global and spatial memory modules contribute to reconstruction quality
+- **Fine-Grained Details**: Spatial-stereo memory preserves detailed geometric features
+- **Structural Coherence**: Global-geometric memory ensures overall structural correctness
+
+#### Diverse Scene Support
+
+WorldStereo demonstrates strong performance across various scene types:
+
+- **Perspective Scenes**: Standard 3D environments captured from perspective cameras
+- **Panoramic Scenes**: Full 360-degree environments from panoramic inputs
+- **Complex Geometry**: Challenging structures with intricate details and occlusions
+
+## Comparative Analysis
+
+### Baseline Comparisons
+
+WorldStereo is compared against several baseline approaches:
+
+<CardGroup cols={2}>
+  <Card title="Standard VDMs" icon="video">
+    Foundational video diffusion models without geometric controls
+  </Card>
+  
+  <Card title="Camera-Controlled Generation" icon="camera">
+    Existing methods for camera-guided video synthesis
+  </Card>
+  
+  <Card title="Multi-View Synthesis" icon="images">
+    Traditional multi-view image generation approaches
+  </Card>
+  
+  <Card title="3D-Aware Generation" icon="cube">
+    3D-aware generative models for novel view synthesis
+  </Card>
+</CardGroup>
+
+### Key Advantages
+
+#### Over Standard VDMs
+
+- **Precise Camera Control**: WorldStereo provides accurate trajectory following vs. limited or no control
+- **Multi-View Consistency**: Geometric memory modules ensure consistency vs. view-independent generation
+- **3D Reconstruction**: Enables high-quality reconstruction vs. inconsistent geometry
+
+#### Over Camera-Controlled Methods
+
+- **Geometric Awareness**: Explicit 3D memory modules vs. implicit control mechanisms
+- **Fine-Grained Consistency**: Spatial-stereo memory preserves details vs. coarse consistency
+- **Reconstruction Quality**: Superior 3D output quality due to geometric constraints
+
+#### Efficiency Benefits
+
+<Info>
+  WorldStereo's control branch architecture provides impressive efficiency by avoiding joint training requirements, enabling faster development and deployment compared to end-to-end trained alternatives.
+</Info>
+
+## World Model Capabilities
+
+### Task Diversity
+
+Extensive experiments demonstrate WorldStereo's versatility as a world model:
+
+- **Novel View Synthesis**: Generate new viewpoints from single or sparse inputs
+- **Scene Completion**: Infer and generate unseen regions of 3D environments
+- **Camera Path Planning**: Support arbitrary camera trajectories for exploration
+- **Multi-Modal Input**: Handle both perspective and panoramic image inputs
+
+### Qualitative Results
+
+WorldStereo produces:
+
+- **Visually Plausible**: High-quality videos that match foundational VDM output quality
+- **Geometrically Consistent**: Multi-view outputs suitable for accurate 3D reconstruction
+- **Detail-Preserving**: Fine-grained textures and structures maintained across views
+- **Temporally Smooth**: Coherent video sequences without artifacts or inconsistencies
+
+<Note>
+  The combination of visual quality from VDM backbones and geometric consistency from memory modules positions WorldStereo as a powerful foundation for 3D-aware video generation tasks.
+</Note>
+
+## Experimental Validation
+
+### Ablation Studies
+
+Extensive ablation studies validate the contribution of each component:
+
+- **Global-Geometric Memory**: Critical for camera control and coarse structure
+- **Spatial-Stereo Memory**: Essential for fine-grained multi-view consistency
+- **Combined Architecture**: Synergistic benefits from both memory modules
+
+### Generalization Tests
+
+- **Cross-Dataset**: Performance on unseen datasets and scene types
+- **Camera Trajectory Variety**: Robustness to diverse camera motion patterns
+- **Scene Complexity**: Handling of intricate geometric structures and textures
+
+## Future Benchmarking
+
+As WorldStereo continues to develop, additional benchmark evaluations will be conducted:
+
+- **Large-Scale Scenes**: Evaluation on extensive environments and urban scenes
+- **Dynamic Content**: Extension to scenes with moving objects and temporal dynamics
+- **Real-Time Performance**: Speed and efficiency benchmarks for interactive applications
+- **User Studies**: Perceptual quality evaluation through human assessments

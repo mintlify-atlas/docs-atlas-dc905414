@@ -1,0 +1,197 @@
+---
+title: Installation
+description: Installation guide and pre-release information for WorldStereo
+---
+
+## Pre-Release Status
+
+<Warning>
+  WorldStereo code and model weights are not yet publicly available. This page describes the planned installation process for when the release occurs.
+</Warning>
+
+The WorldStereo team is currently preparing the codebase and model weights for public release. Follow the [GitHub repository](https://github.com/FuchengSu/WorldStereo) for updates on the release timeline.
+
+## Stay Updated
+
+<CardGroup cols={2}>
+  <Card
+    title="GitHub Repository"
+    icon="github"
+    href="https://github.com/FuchengSu/WorldStereo"
+  >
+    Watch the repository for release announcements
+  </Card>
+  <Card
+    title="arXiv Paper"
+    icon="file-lines"
+    href="https://arxiv.org"
+  >
+    Read the research paper for technical details
+  </Card>
+</CardGroup>
+
+## Expected System Requirements
+
+Based on the nature of WorldStereo as a Video Diffusion Model-based framework with geometric memory modules, the following requirements are anticipated:
+
+### Hardware Requirements
+
+<Info>
+  These are estimated requirements. Actual requirements will be confirmed upon code release.
+</Info>
+
+- **GPU**: NVIDIA GPU with at least 24GB VRAM (e.g., RTX 3090, RTX 4090, or A100)
+  - Video diffusion models are computationally intensive
+  - Geometric memory modules require additional VRAM for point cloud storage
+- **RAM**: At least 32GB system memory recommended
+- **Storage**: 50GB+ free space for model weights and dependencies
+- **CUDA**: CUDA 11.8 or higher
+
+### Software Requirements
+
+- **Python**: 3.9 or higher
+- **PyTorch**: 2.0+ with CUDA support
+- **Additional dependencies** (expected):
+  - Diffusion model libraries (likely diffusers or custom implementation)
+  - 3D processing libraries (e.g., PyTorch3D, Open3D for point cloud operations)
+  - Video processing utilities (e.g., OpenCV, imageio)
+  - Camera pose handling libraries
+
+## Planned Installation Steps
+
+<Note>
+  The following installation procedure is provisional and will be updated when the code is released.
+</Note>
+
+<Steps>
+  <Step title="Clone the Repository">
+    Once released, clone the WorldStereo repository:
+    
+    ```bash
+    git clone https://github.com/FuchengSu/WorldStereo.git
+    cd WorldStereo
+    ```
+  </Step>
+
+  <Step title="Create Virtual Environment">
+    Set up a Python virtual environment to isolate dependencies:
+    
+    ```bash
+    python -m venv worldstereo-env
+    source worldstereo-env/bin/activate  # On Windows: worldstereo-env\Scripts\activate
+    ```
+  </Step>
+
+  <Step title="Install Dependencies">
+    Install required Python packages:
+    
+    ```bash
+    pip install -r requirements.txt
+    ```
+    
+    This will likely include PyTorch, diffusion libraries, and 3D processing tools.
+  </Step>
+
+  <Step title="Download Model Weights">
+    Download pre-trained model weights:
+    
+    ```bash
+    # Method will be provided upon release
+    # Possibly through Hugging Face Hub or direct download
+    python download_models.py
+    ```
+    
+    Expected model components:
+    - Base VDM (Video Diffusion Model) backbone
+    - Global-geometric memory module weights
+    - Spatial-stereo memory module weights
+  </Step>
+
+  <Step title="Verify Installation">
+    Test the installation:
+    
+    ```bash
+    python test_installation.py
+    ```
+    
+    This should verify:
+    - CUDA availability and GPU detection
+    - Model weights loaded correctly
+    - All dependencies installed properly
+  </Step>
+</Steps>
+
+## Docker Installation (Expected)
+
+A Docker container may be provided for easier setup:
+
+```bash
+# Expected Docker usage (tentative)
+docker pull worldstereo/worldstereo:latest
+docker run --gpus all -it worldstereo/worldstereo:latest
+```
+
+<Info>
+  Docker support will simplify dependency management and ensure consistent environments across different systems.
+</Info>
+
+## Model Architecture Components
+
+When released, WorldStereo will include:
+
+### VDM Backbone
+The foundation Video Diffusion Model trained with distribution matching distillation for efficient generation.
+
+### Control Branch
+The flexible control branch architecture that integrates geometric memory modules without requiring joint training of the entire system.
+
+### Geometric Memory Modules
+- **Global-geometric memory**: Point cloud-based structural priors
+- **Spatial-stereo memory**: 3D correspondence-based attention constraints
+
+## Troubleshooting (Anticipated)
+
+### GPU Memory Issues
+
+If you encounter out-of-memory errors:
+- Reduce batch size or video resolution
+- Use gradient checkpointing if available
+- Consider using model quantization (e.g., fp16/bf16)
+
+### CUDA Compatibility
+
+Ensure your PyTorch installation matches your CUDA version:
+
+```bash
+python -c "import torch; print(torch.cuda.is_available())"
+python -c "import torch; print(torch.version.cuda)"
+```
+
+## Getting Help
+
+Once the code is released:
+
+- **Issues**: Report bugs on [GitHub Issues](https://github.com/FuchengSu/WorldStereo/issues)
+- **Discussions**: Join discussions on the GitHub repository
+- **Documentation**: Check the official documentation for detailed guides
+
+## Next Steps
+
+While waiting for the release:
+
+<CardGroup cols={2}>
+  <Card
+    title="Read the Paper"
+    icon="book"
+    href="https://arxiv.org"
+  >
+    Understand the technical details and methodology
+  </Card>
+  <Card
+    title="Quick Start Guide"
+    icon="rocket"
+    href="/quickstart"
+  >
+    Preview the planned usage workflow
+  </Card>
+</CardGroup>

@@ -1,0 +1,97 @@
+---
+title: Research Paper
+description: WorldStereo research paper information, authors, and abstract
+icon: newspaper
+---
+
+## Overview
+
+WorldStereo is a novel framework that bridges camera-guided video generation and 3D reconstruction via geometric memory modules. The research introduces innovative approaches to enable multi-view-consistent video generation under precise camera control.
+
+<Info>
+  The paper demonstrates how WorldStereo acts as a powerful world model, tackling diverse scene generation tasks with high-fidelity 3D results.
+</Info>
+
+## Authors
+
+The WorldStereo project is a collaboration between **Zhejiang University** and **Tencent Hunyuan**.
+
+### Research Team
+
+<CardGroup cols={2}>
+  <Card title="Yisu Zhang" icon="user">
+    Zhejiang University & Tencent Hunyuan  
+    *Equal Contribution*
+  </Card>
+  
+  <Card title="Chenjie Cao" icon="user">
+    Tencent Hunyuan  
+    *Equal Contribution*
+  </Card>
+  
+  <Card title="Tengfei Wang" icon="user">
+    Tencent Hunyuan  
+    *Project Lead*
+  </Card>
+  
+  <Card title="Xuhui Zuo" icon="user">
+    Tencent Hunyuan
+  </Card>
+  
+  <Card title="Junta Wu" icon="user">
+    Tencent Hunyuan
+  </Card>
+  
+  <Card title="Jianke Zhu" icon="user">
+    Zhejiang University  
+    *Corresponding Author*
+  </Card>
+  
+  <Card title="Chunchao Guo" icon="user">
+    Tencent Hunyuan
+  </Card>
+</CardGroup>
+
+### Institutional Affiliations
+
+- **Zhejiang University**: Leading research university in China, home to the Computer Vision and Graphics Lab
+- **Tencent Hunyuan**: Tencent's AI research division focusing on multimodal foundation models
+
+## Abstract
+
+Recent advances in foundational Video Diffusion Models (VDMs) have yielded significant progress. Yet, despite the remarkable visual quality of generated videos, reconstructing consistent 3D scenes from these outputs remains challenging, due to limited camera controllability and inconsistent generated content when viewed from distinct camera trajectories.
+
+In this paper, we propose **WorldStereo**, a novel framework that bridges camera-guided video generation and 3D reconstruction via two dedicated geometric memory modules.
+
+### Key Innovation
+
+Formally, the global-geometric memory enables precise camera control while injecting coarse structural priors through incrementally updated point clouds. Moreover, the spatial-stereo memory constrains the model's attention receptive fields with 3D correspondence to focus on fine-grained details from the memory bank.
+
+### Results
+
+These components enable WorldStereo to generate multi-view-consistent videos under precise camera control, facilitating high-quality 3D reconstruction. Furthermore, the flexible control branch-based WorldStereo shows impressive efficiency, benefiting from the distribution matching distilled VDM backbone without joint training.
+
+<Note>
+  Extensive experiments across both camera-guided video generation and 3D reconstruction benchmarks demonstrate the effectiveness of our approach.
+</Note>
+
+Notably, we show that WorldStereo acts as a powerful world model, tackling diverse scene generation tasks (whether starting from perspective or panoramic images) with high-fidelity 3D results.
+
+## Paper Access
+
+<Card title="arXiv Preprint" icon="file-pdf" href="https://arxiv.org/abs/2602.24233">
+  Read the full research paper on arXiv
+</Card>
+
+## Citation
+
+If you use WorldStereo in your research, please cite our paper:
+
+```bibtex
+@article{zhang2026worldstereo,
+  title={WorldStereo: Bridging Camera-Guided Video Generation and Scene Reconstruction via 3D Geometric Memories},
+  author={Zhang, Yisu and Cao, Chenjie and Wang, Tengfei and Zuo, Xuhui and Wu, Junta and Zhu, Jianke and Guo, Chunchao},
+  journal={arXiv preprint arXiv:2602.24233},
+  year={2026}
+}
+```

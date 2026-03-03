@@ -1,0 +1,104 @@
+---
+title: Introduction
+description: WorldStereo is a novel framework that bridges camera-guided video generation and 3D reconstruction through geometric memory modules
+---
+
+# WorldStereo
+
+## Overview
+
+WorldStereo is a cutting-edge framework developed by researchers from Zhejiang University and Tencent Hunyuan that revolutionizes camera-guided video generation and 3D scene reconstruction. Built on Video Diffusion Models (VDMs), WorldStereo addresses the fundamental challenge of reconstructing consistent 3D scenes from generated videos by introducing precise camera controllability and multi-view consistency.
+
+While recent advances in foundational Video Diffusion Models have achieved remarkable visual quality, reconstructing consistent 3D scenes from these outputs has remained challenging due to limited camera control and inconsistent content across different viewpoints. WorldStereo solves this through two dedicated geometric memory modules that enable both precise camera control and high-quality 3D reconstruction.
+
+## Key Features
+
+<CardGroup cols={2}>
+  <Card
+    title="Global-Geometric Memory"
+    icon="globe"
+    href="#global-geometric-memory"
+  >
+    Enables precise camera control while injecting coarse structural priors through incrementally updated point clouds
+  </Card>
+  <Card
+    title="Spatial-Stereo Memory"
+    icon="cube"
+    href="#spatial-stereo-memory"
+  >
+    Constrains attention receptive fields with 3D correspondence to focus on fine-grained details from the memory bank
+  </Card>
+  <Card
+    title="Multi-View Consistency"
+    icon="video"
+    href="/guides/camera-guided-generation"
+  >
+    Generate videos under precise camera control with multi-view consistency for high-quality 3D reconstruction
+  </Card>
+  <Card
+    title="Flexible World Model"
+    icon="layer-group"
+    href="/guides/scene-generation"
+  >
+    Tackle diverse scene generation tasks from perspective or panoramic images with high-fidelity 3D results
+  </Card>
+</CardGroup>
+
+## Core Architecture
+
+### Global-Geometric Memory
+
+The global-geometric memory module provides precise camera control by maintaining and updating point clouds that encode coarse structural priors. This module operates incrementally, building up a geometric understanding of the scene as video frames are generated. The point cloud representation allows WorldStereo to maintain spatial consistency across different camera trajectories while guiding the diffusion process.
+
+### Spatial-Stereo Memory
+
+The spatial-stereo memory works at a finer granularity, constraining the model's attention mechanisms using 3D correspondences. By focusing attention on relevant fine-grained details stored in the memory bank, this module ensures that generated content remains geometrically consistent when viewed from different angles. This is crucial for enabling high-quality 3D reconstruction from the generated videos.
+
+## How It Works
+
+WorldStereo leverages a control branch-based architecture that integrates with a distribution matching distilled VDM backbone. This design choice provides impressive efficiency benefits, as the geometric memory modules can be added without requiring joint training of the entire system. The framework processes input images (either perspective or panoramic) and camera trajectories to generate multi-view consistent videos that can be directly used for 3D reconstruction.
+
+<Info>
+  WorldStereo has been validated across both camera-guided video generation and 3D reconstruction benchmarks, demonstrating state-of-the-art performance in generating geometrically consistent content.
+</Info>
+
+## Research Background
+
+WorldStereo was developed through collaboration between:
+- **Zhejiang University**: Leading research in computer vision and 3D reconstruction
+- **Tencent Hunyuan**: Advancing foundational models and AI infrastructure
+
+The framework represents a significant step forward in bridging the gap between generative video models and 3D scene understanding, enabling applications in virtual reality, robotics, and content creation.
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card
+    title="Installation"
+    icon="download"
+    href="/installation"
+  >
+    Learn about installation requirements and pre-release status
+  </Card>
+  <Card
+    title="Quick Start"
+    icon="rocket"
+    href="/quickstart"
+  >
+    Get started with WorldStereo once the code is released
+  </Card>
+  <Card
+    title="Research Paper"
+    icon="file-lines"
+    href="https://arxiv.org"
+  >
+    Read the full technical paper on arXiv
+  </Card>
+  <Card
+    title="GitHub Repository"
+    icon="github"
+    href="https://github.com/FuchengSu/WorldStereo"
+  >
+    Follow development and star the project
+  </Card>
+</CardGroup>

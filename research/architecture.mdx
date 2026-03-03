@@ -1,0 +1,163 @@
+---
+title: Technical Architecture
+description: WorldStereo's technical architecture and design decisions
+icon: diagram-project
+---
+
+## System Overview
+
+WorldStereo introduces a novel framework that bridges camera-guided video generation and 3D reconstruction through innovative geometric memory modules. The architecture is built on top of foundational Video Diffusion Models (VDMs) with specialized components for precise camera control and multi-view consistency.
+
+<Info>
+  WorldStereo leverages a control branch-based design that benefits from distribution matching distilled VDM backbone without requiring joint training.
+</Info>
+
+## Core Components
+
+<CardGroup cols={2}>
+  <Card title="Global-Geometric Memory" icon="globe">
+    Enables precise camera control while injecting coarse structural priors through incrementally updated point clouds
+  </Card>
+  
+  <Card title="Spatial-Stereo Memory" icon="cube">
+    Constrains attention receptive fields with 3D correspondence to focus on fine-grained details from the memory bank
+  </Card>
+  
+  <Card title="VDM Backbone" icon="brain">
+    Distribution matching distilled Video Diffusion Model foundation
+  </Card>
+  
+  <Card title="Control Branch" icon="sliders">
+    Flexible control mechanism for camera trajectory guidance
+  </Card>
+</CardGroup>
+
+## Global-Geometric Memory Module
+
+### Purpose
+
+The global-geometric memory module addresses two critical challenges in camera-guided video generation:
+
+1. **Precise Camera Control**: Enables accurate camera trajectory following during video generation
+2. **Structural Prior Injection**: Provides coarse 3D structural information to guide the generation process
+
+### Implementation Details
+
+- **Incremental Point Cloud Updates**: The module maintains and incrementally updates point clouds representing the scene structure
+- **Coarse Structural Priors**: These point clouds serve as geometric scaffolding for the generation process
+- **Camera Trajectory Integration**: Camera pose information is directly incorporated into the memory mechanism
+
+<Note>
+  The incremental update strategy allows the model to progressively refine its understanding of scene geometry during generation.
+</Note>
+
+## Spatial-Stereo Memory Module
+
+### Purpose
+
+The spatial-stereo memory module ensures fine-grained multi-view consistency by leveraging 3D geometric correspondence.
+
+### Key Mechanisms
+
+- **Attention Receptive Field Constraints**: The module constrains the model's attention mechanism using 3D correspondence information
+- **Memory Bank Architecture**: A dedicated memory bank stores fine-grained spatial details
+- **Stereo Correspondence**: Enforces consistency across different viewpoints through explicit 3D correspondence
+
+### Benefits
+
+<CardGroup cols={2}>
+  <Card title="Fine-Grained Consistency" icon="check">
+    Ensures detailed multi-view consistency at the pixel level
+  </Card>
+  
+  <Card title="Geometric Awareness" icon="compass">
+    Leverages 3D structure to guide attention mechanisms
+  </Card>
+</CardGroup>
+
+## Design Philosophy
+
+### Separation of Concerns
+
+WorldStereo's architecture follows a clear separation of concerns:
+
+- **Coarse Structure** (Global-Geometric Memory): Handles overall scene layout and camera control
+- **Fine Details** (Spatial-Stereo Memory): Manages detailed consistency and local geometry
+- **Generation** (VDM Backbone): Produces high-quality visual content
+
+### Efficiency Through Modularity
+
+<Info>
+  The control branch-based design enables impressive efficiency by avoiding joint training requirements. The geometric memory modules can be integrated with pre-trained VDM backbones through distribution matching.
+</Info>
+
+## Video Diffusion Model Integration
+
+### Distribution Matching
+
+WorldStereo leverages a distilled VDM backbone through distribution matching, which provides:
+
+- **Pre-trained Visual Quality**: Inherits the high-quality generation capabilities of foundational VDMs
+- **No Joint Training Required**: The control branch and memory modules can be trained separately
+- **Computational Efficiency**: Reduces training costs and enables faster iteration
+
+### Control Branch Architecture
+
+The flexible control branch mechanism:
+
+1. Processes camera trajectory inputs
+2. Interfaces with geometric memory modules
+3. Injects control signals into the VDM backbone
+4. Maintains generation quality while adding precise control
+
+## Multi-View Consistency
+
+### Achieving Consistency
+
+WorldStereo achieves multi-view consistency through the synergy of its geometric memory modules:
+
+```
+Camera Input → Global-Geometric Memory → Coarse Structure
+                         ↓
+              Spatial-Stereo Memory → Fine Details
+                         ↓
+                   VDM Backbone → Consistent Video
+```
+
+### 3D Reconstruction Pipeline
+
+The architecture naturally supports 3D reconstruction:
+
+1. **Multi-View Generation**: Generate views from controlled camera trajectories
+2. **Geometric Consistency**: Leverage memory modules for consistent geometry
+3. **Reconstruction**: Apply standard multi-view reconstruction techniques
+4. **High-Quality Output**: Benefit from both visual quality and geometric accuracy
+
+<Note>
+  The geometric memory modules ensure that generated views are not just visually plausible but also geometrically consistent, enabling high-quality 3D reconstruction.
+</Note>
+
+## Flexibility and Generalization
+
+### Scene Type Support
+
+WorldStereo's architecture supports diverse scene generation tasks:
+
+<CardGroup cols={2}>
+  <Card title="Perspective Images" icon="camera">
+    Standard perspective camera inputs for conventional 3D scenes
+  </Card>
+  
+  <Card title="Panoramic Images" icon="panorama">
+    360-degree panoramic inputs for immersive environment generation
+  </Card>
+</CardGroup>
+
+### World Model Capabilities
+
+The architecture's design enables WorldStereo to function as a powerful world model:
+
+- **Spatial Understanding**: Geometric memories provide explicit 3D awareness
+- **View Synthesis**: Generate novel views with precise camera control
+- **Scene Completion**: Infer and generate unseen portions of scenes
+- **Temporal Consistency**: Maintain coherence across video frames

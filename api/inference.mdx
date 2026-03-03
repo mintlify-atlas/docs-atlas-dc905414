@@ -1,0 +1,522 @@
+---
+title: 'Inference API'
+description: 'High-level interface for generating multi-view-consistent videos with WorldStereo'
+---
+
+## Overview
+
+The inference API provides a simplified interface for generating videos from WorldStereo. It handles the complexity of memory management, diffusion scheduling, and camera control, allowing you to focus on creative applications.
+
+<Note>
+  This API is designed for production use cases and research experiments. For low-level control, use the [WorldStereo model](/api/worldstereo-model) directly.
+</Note>
+
+## Function: generate_video
+
+Main function for generating multi-view-consistent videos.
+
+```python
+generate_video(
+    model: WorldStereo,
+    condition_image: Union[str, PIL.Image, torch.Tensor],
+    camera_trajectory: CameraTrajectory,
+    num_frames: int = 16,
+    height: int = 512,
+    width: int = 512,
+    num_inference_steps: int = 50,
+    guidance_scale: float = 7.5,
+    point_cloud: Optional[torch.Tensor] = None,
+    use_geometric_memory: bool = True,
+    use_spatial_memory: bool = True,
+    seed: Optional[int] = None,
+    output_format: str = "tensor",
+    save_path: Optional[str] = None,
+    progress_callback: Optional[Callable] = None
+) -> Union[torch.Tensor, np.ndarray, List[PIL.Image]]
+```
+
+### Parameters
+
+<ParamField path="model" type="WorldStereo" required>
+  Initialized WorldStereo model instance.
+</ParamField>
+
+<ParamField path="condition_image" type="Union[str, PIL.Image, torch.Tensor]" required>
+  Conditioning image for video generation. Can be:
+  - File path (str)
+  - PIL Image object
+  - Torch tensor with shape `(C, H, W)` or `(1, C, H, W)`
+  
+  Supports both perspective and panoramic images.
+</ParamField>
+
+<ParamField path="camera_trajectory" type="CameraTrajectory" required>
+  Camera trajectory defining viewpoints for each frame. See [Camera Control](/api/camera-control) for creation methods.
+</ParamField>
+
+<ParamField path="num_frames" type="int" default="16">
+  Number of frames to generate. Must match the trajectory length.
+</ParamField>
+
+<ParamField path="height" type="int" default="512">
+  Output video height in pixels.
+</ParamField>
+
+<ParamField path="width" type="int" default="512">
+  Output video width in pixels.
+</ParamField>
+
+<ParamField path="num_inference_steps" type="int" default="50">
+  Number of denoising steps. More steps typically improve quality but increase computation time.
+  - Recommended: 25-50 for fast generation
+  - 50-100 for high quality
+</ParamField>
+
+<ParamField path="guidance_scale" type="float" default="7.5">
+  Classifier-free guidance scale. Higher values increase fidelity to the condition image but may reduce diversity.
+  - Typical range: 5.0-15.0
+  - Lower values (5.0-7.5): More creative
+  - Higher values (10.0-15.0): More faithful to input
+</ParamField>
+
+<ParamField path="point_cloud" type="torch.Tensor">
+  Optional initial point cloud for geometric conditioning, shape `(N, 3)` or `(N, 6)` with RGB.
+</ParamField>
+
+<ParamField path="use_geometric_memory" type="bool" default="True">
+  Whether to use global geometric memory module.
+</ParamField>
+
+<ParamField path="use_spatial_memory" type="bool" default="True">
+  Whether to use spatial-stereo memory module.
+</ParamField>
+
+<ParamField path="seed" type="int">
+  Random seed for reproducibility. If None, uses a random seed.
+</ParamField>
+
+<ParamField path="output_format" type="str" default="tensor">
+  Output format:
+  - "tensor": PyTorch tensor `(T, C, H, W)`
+  - "numpy": NumPy array `(T, H, W, C)`
+  - "pil": List of PIL Images
+  - "video": MP4 file (requires `save_path`)
+</ParamField>
+
+<ParamField path="save_path" type="str">
+  Path to save the output video. Required if `output_format="video"`.
+</ParamField>
+
+<ParamField path="progress_callback" type="Callable">
+  Optional callback function called after each denoising step:
+  `callback(step: int, total_steps: int, latent: torch.Tensor) -> None`
+</ParamField>
+
+### Returns
+
+<ResponseField name="video" type="Union[torch.Tensor, np.ndarray, List[PIL.Image]]">
+  Generated video in the specified output format.
+</ResponseField>
+
+## Function: generate_multi_view
+
+Generate multiple videos from different camera trajectories with shared memory.
+
+```python
+generate_multi_view(
+    model: WorldStereo,
+    condition_image: Union[str, PIL.Image, torch.Tensor],
+    trajectories: List[CameraTrajectory],
+    shared_memory: bool = True,
+    **generation_kwargs
+) -> List[Union[torch.Tensor, np.ndarray, List[PIL.Image]]]
+```
+
+<ParamField path="model" type="WorldStereo" required>
+  WorldStereo model instance.
+</ParamField>
+
+<ParamField path="condition_image" type="Union[str, PIL.Image, torch.Tensor]" required>
+  Conditioning image.
+</ParamField>
+
+<ParamField path="trajectories" type="List[CameraTrajectory]" required>
+  List of camera trajectories for different viewpoints.
+</ParamField>
+
+<ParamField path="shared_memory" type="bool" default="True">
+  If True, memory modules are shared and updated across all trajectories for consistency.
+</ParamField>
+
+<ParamField path="**generation_kwargs" type="Any">
+  Additional arguments passed to `generate_video()`.
+</ParamField>
+
+<ResponseField name="videos" type="List">
+  List of generated videos, one per trajectory.
+</ResponseField>
+
+## Function: reconstruct_3d
+
+Generate video and reconstruct the 3D scene.
+
+```python
+reconstruct_3d(
+    model: WorldStereo,
+    condition_image: Union[str, PIL.Image, torch.Tensor],
+    camera_trajectory: CameraTrajectory,
+    reconstruction_method: str = "point_cloud",
+    num_frames: int = 16,
+    **generation_kwargs
+) -> Tuple[Union[torch.Tensor, np.ndarray], Dict[str, Any]]
+```
+
+<ParamField path="model" type="WorldStereo" required>
+  WorldStereo model instance.
+</ParamField>
+
+<ParamField path="condition_image" type="Union[str, PIL.Image, torch.Tensor]" required>
+  Conditioning image.
+</ParamField>
+
+<ParamField path="camera_trajectory" type="CameraTrajectory" required>
+  Camera trajectory for video generation.
+</ParamField>
+
+<ParamField path="reconstruction_method" type="str" default="point_cloud">
+  3D reconstruction method:
+  - "point_cloud": Dense point cloud
+  - "mesh": Triangle mesh
+  - "neural_field": Neural radiance field
+</ParamField>
+
+<ParamField path="num_frames" type="int" default="16">
+  Number of frames to generate.
+</ParamField>
+
+<ParamField path="**generation_kwargs" type="Any">
+  Additional arguments for generation.
+</ParamField>
+
+<ResponseField name="video" type="Union[torch.Tensor, np.ndarray]">
+  Generated video.
+</ResponseField>
+
+<ResponseField name="reconstruction" type="Dict[str, Any]">
+  3D reconstruction with:
+  - `points`: Point cloud coordinates `(N, 3)`
+  - `colors`: RGB colors `(N, 3)` (if available)
+  - `normals`: Surface normals `(N, 3)` (if available)
+  - `mesh`: Triangle mesh (if `reconstruction_method="mesh"`)
+  - `quality_metrics`: Reconstruction quality metrics
+</ResponseField>
+
+## Pipeline Class
+
+For more control, use the `WorldStereoPipeline` class.
+
+### Class: WorldStereoPipeline
+
+```python
+WorldStereoPipeline(
+    model_path: str,
+    device: str = "cuda",
+    torch_dtype: torch.dtype = torch.float16,
+    enable_xformers: bool = True,
+    enable_cpu_offload: bool = False
+)
+```
+
+<ParamField path="model_path" type="str" required>
+  Path to pretrained model weights or Hugging Face model ID.
+</ParamField>
+
+<ParamField path="device" type="str" default="cuda">
+  Device to run inference on.
+</ParamField>
+
+<ParamField path="torch_dtype" type="torch.dtype" default="torch.float16">
+  Data type for model weights (float32 or float16).
+</ParamField>
+
+<ParamField path="enable_xformers" type="bool" default="True">
+  Use memory-efficient attention from xFormers.
+</ParamField>
+
+<ParamField path="enable_cpu_offload" type="bool" default="False">
+  Offload model to CPU when not in use (saves GPU memory).
+</ParamField>
+
+#### Methods
+
+The pipeline exposes the same methods as the functional API: `generate_video()`, `generate_multi_view()`, and `reconstruct_3d()`.
+
+## Examples
+
+<CodeGroup>
+
+```python Basic Video Generation
+import torch
+from worldstereo import WorldStereo, generate_video, CameraTrajectory
+from PIL import Image
+
+# Load model
+model = WorldStereo.from_pretrained("worldstereo/worldstereo-v1").cuda()
+
+# Load conditioning image
+image = Image.open("scene.jpg")
+
+# Create camera trajectory
+trajectory = CameraTrajectory.forward(
+    distance=2.0,
+    num_frames=16
+)
+
+# Generate video
+video = generate_video(
+    model=model,
+    condition_image=image,
+    camera_trajectory=trajectory,
+    num_frames=16,
+    guidance_scale=7.5,
+    seed=42
+)
+
+print(video.shape)  # (16, 3, 512, 512)
+```
+
+```python Multi-View Generation
+from worldstereo import generate_multi_view, CameraTrajectory
+
+# Define multiple trajectories
+trajectories = [
+    CameraTrajectory.forward(distance=2.0, num_frames=16),
+    CameraTrajectory.orbit(radius=3.0, num_frames=16, angle=90),
+    CameraTrajectory.dolly_zoom(start_distance=1.0, end_distance=3.0, num_frames=16)
+]
+
+# Generate all views with shared memory
+videos = generate_multi_view(
+    model=model,
+    condition_image=image,
+    trajectories=trajectories,
+    shared_memory=True,
+    num_inference_steps=50,
+    guidance_scale=7.5
+)
+
+print(f"Generated {len(videos)} videos")
+```
+
+```python 3D Reconstruction
+from worldstereo import reconstruct_3d
+
+# Generate and reconstruct
+video, reconstruction = reconstruct_3d(
+    model=model,
+    condition_image=image,
+    camera_trajectory=trajectory,
+    reconstruction_method="point_cloud",
+    num_frames=16
+)
+
+point_cloud = reconstruction["points"]  # (N, 3)
+colors = reconstruction["colors"]  # (N, 3)
+print(f"Reconstructed {len(point_cloud)} points")
+
+# Save point cloud
+import numpy as np
+np.save("scene.npy", point_cloud)
+```
+
+```python Using Pipeline
+from worldstereo import WorldStereoPipeline
+
+# Create pipeline
+pipeline = WorldStereoPipeline(
+    model_path="worldstereo/worldstereo-v1",
+    device="cuda",
+    torch_dtype=torch.float16,
+    enable_xformers=True
+)
+
+# Generate with progress callback
+def on_progress(step, total_steps, latent):
+    print(f"Step {step}/{total_steps}")
+
+video = pipeline.generate_video(
+    condition_image="scene.jpg",
+    camera_trajectory=trajectory,
+    num_frames=16,
+    progress_callback=on_progress,
+    save_path="output.mp4",
+    output_format="video"
+)
+
+print("Saved to output.mp4")
+```
+
+```python Panoramic Input
+# Load panoramic image
+panorama = Image.open("panorama.jpg")  # Equirectangular projection
+
+# Create trajectory for interior exploration
+trajectory = CameraTrajectory.from_waypoints(
+    waypoints=[
+        {"position": [0, 0, 0], "rotation": [0, 0, 0]},
+        {"position": [0, 0, 0], "rotation": [0, 90, 0]},
+        {"position": [0, 0, 0], "rotation": [0, 180, 0]}
+    ],
+    num_frames=24
+)
+
+# Generate from panoramic input
+video = generate_video(
+    model=model,
+    condition_image=panorama,
+    camera_trajectory=trajectory,
+    num_frames=24,
+    height=512,
+    width=512
+)
+```
+
+```python Custom Point Cloud Initialization
+import open3d as o3d
+
+# Load existing point cloud
+pcd = o3d.io.read_point_cloud("scene.ply")
+point_cloud = torch.tensor(np.asarray(pcd.points), dtype=torch.float32).cuda()
+
+# Generate with geometric prior
+video = generate_video(
+    model=model,
+    condition_image=image,
+    camera_trajectory=trajectory,
+    point_cloud=point_cloud,
+    use_geometric_memory=True,
+    num_frames=16
+)
+```
+
+</CodeGroup>
+
+## Advanced Configuration
+
+### Memory Management
+
+<Accordion title="Controlling Memory Usage">
+  ```python
+  # Initialize with custom memory settings
+  model = WorldStereo(
+      vdm_config={...},
+      global_memory_config={
+          "max_points": 50000,  # Limit point cloud size
+          "update_frequency": "manual"  # Control updates manually
+      },
+      spatial_memory_config={
+          "memory_size": 512,  # Smaller memory bank
+          "num_correspondences": 32
+      }
+  )
+  
+  # Disable memory modules for faster generation
+  video = generate_video(
+      model=model,
+      condition_image=image,
+      camera_trajectory=trajectory,
+      use_geometric_memory=False,  # Disable global memory
+      use_spatial_memory=False  # Disable spatial memory
+  )
+  ```
+</Accordion>
+
+### Optimization
+
+<Accordion title="Performance Optimization">
+  ```python
+  # Enable xFormers for memory-efficient attention
+  from worldstereo.optimization import enable_xformers_memory_efficient_attention
+  enable_xformers_memory_efficient_attention(model)
+  
+  # Use mixed precision
+  model = model.half()  # Convert to float16
+  
+  # Reduce inference steps for speed
+  video = generate_video(
+      model=model,
+      condition_image=image,
+      camera_trajectory=trajectory,
+      num_inference_steps=25,  # Faster, slight quality trade-off
+      guidance_scale=7.5
+  )
+  
+  # Enable CPU offload for large models
+  from worldstereo.optimization import enable_model_cpu_offload
+  enable_model_cpu_offload(model)
+  ```
+</Accordion>
+
+### Batch Processing
+
+<Accordion title="Batch Generation">
+  ```python
+  # Generate multiple videos in parallel
+  images = [Image.open(f"scene_{i}.jpg") for i in range(4)]
+  trajectories = [CameraTrajectory.forward(distance=2.0) for _ in range(4)]
+  
+  # Batch process (if GPU memory allows)
+  videos = []
+  for img, traj in zip(images, trajectories):
+      video = generate_video(
+          model=model,
+          condition_image=img,
+          camera_trajectory=traj,
+          num_frames=16
+      )
+      videos.append(video)
+  ```
+</Accordion>
+
+## Quality Tips
+
+<Tabs>
+  <Tab title="For Best Quality">
+    - Use 50-100 inference steps
+    - Set guidance_scale to 10.0-15.0
+    - Enable both memory modules
+    - Use higher resolution (768x768 or 1024x1024)
+    - Provide initial point cloud if available
+  </Tab>
+  <Tab title="For Speed">
+    - Use 25-50 inference steps
+    - Set guidance_scale to 5.0-7.5
+    - Disable one or both memory modules
+    - Use lower resolution (512x512)
+    - Enable xFormers and mixed precision
+  </Tab>
+  <Tab title="For 3D Reconstruction">
+    - Use longer trajectories (24-32 frames)
+    - Ensure smooth camera motion
+    - Enable geometric memory with high max_points
+    - Use higher guidance_scale for consistency
+    - Consider panoramic input for full scene coverage
+  </Tab>
+</Tabs>
+
+## Related Documentation
+
+<CardGroup cols={2}>
+  <Card title="WorldStereo Model" icon="brain" href="/api/worldstereo-model">
+    Low-level model API for advanced use cases
+  </Card>
+  <Card title="Memory Modules" icon="memory" href="/api/memory-modules">
+    Configure geometric memory components
+  </Card>
+  <Card title="Camera Control" icon="camera" href="/api/camera-control">
+    Create and customize camera trajectories
+  </Card>
+  <Card title="3D Reconstruction" icon="cube" href="/api/reconstruction">
+    Detailed reconstruction pipeline
+  </Card>
+</CardGroup>

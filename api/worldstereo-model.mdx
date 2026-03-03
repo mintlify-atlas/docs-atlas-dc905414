@@ -1,0 +1,363 @@
+---
+title: 'WorldStereo Model'
+description: 'Main WorldStereo model class for camera-guided video generation with 3D geometric memories'
+---
+
+## Overview
+
+The `WorldStereo` class is the core model that bridges camera-guided video generation and 3D scene reconstruction. It integrates a Video Diffusion Model (VDM) backbone with geometric memory modules to generate multi-view-consistent videos under precise camera control.
+
+## Model Architecture
+
+WorldStereo consists of three primary components:
+
+1. **VDM Backbone**: Distribution matching distilled Video Diffusion Model
+2. **Global Geometric Memory**: Injects coarse structural priors via point clouds
+3. **Spatial-Stereo Memory**: Constrains attention with 3D correspondence for fine details
+
+<Note>
+  The control branch design enables efficient integration without requiring joint training with the VDM backbone.
+</Note>
+
+## Class: WorldStereo
+
+### Constructor
+
+```python
+WorldStereo(
+    vdm_config: Dict[str, Any],
+    global_memory_config: Dict[str, Any],
+    spatial_memory_config: Dict[str, Any],
+    pretrained_path: Optional[str] = None,
+    device: str = "cuda"
+)
+```
+
+<ParamField path="vdm_config" type="Dict[str, Any]" required>
+  Configuration for the Video Diffusion Model backbone. Includes parameters for:
+  - Model architecture (layers, dimensions, attention heads)
+  - Temporal modeling settings
+  - Diffusion process parameters (timesteps, noise schedule)
+</ParamField>
+
+<ParamField path="global_memory_config" type="Dict[str, Any]" required>
+  Configuration for the global geometric memory module. See [Global Geometric Memory](/api/memory-modules#global-geometric-memory) for details.
+</ParamField>
+
+<ParamField path="spatial_memory_config" type="Dict[str, Any]" required>
+  Configuration for the spatial-stereo memory module. See [Spatial-Stereo Memory](/api/memory-modules#spatial-stereo-memory) for details.
+</ParamField>
+
+<ParamField path="pretrained_path" type="str">
+  Path to pretrained model weights. If not provided, initializes with random weights.
+</ParamField>
+
+<ParamField path="device" type="str" default="cuda">
+  Device to run the model on ("cuda" or "cpu").
+</ParamField>
+
+### Methods
+
+#### forward
+
+Performs a forward pass through the model for training.
+
+```python
+forward(
+    images: torch.Tensor,
+    camera_params: CameraParameters,
+    timesteps: torch.Tensor,
+    point_cloud: Optional[torch.Tensor] = None,
+    return_dict: bool = True
+) -> Union[ModelOutput, Tuple]
+```
+
+<ParamField path="images" type="torch.Tensor" required>
+  Input images with shape `(B, T, C, H, W)` where:
+  - B: batch size
+  - T: number of frames
+  - C: channels (3 for RGB)
+  - H: height
+  - W: width
+</ParamField>
+
+<ParamField path="camera_params" type="CameraParameters" required>
+  Camera parameters including:
+  - Intrinsics (focal length, principal point)
+  - Extrinsics (rotation, translation)
+  - Trajectory information for multi-view generation
+</ParamField>
+
+<ParamField path="timesteps" type="torch.Tensor" required>
+  Diffusion timesteps for the forward process, shape `(B,)`.
+</ParamField>
+
+<ParamField path="point_cloud" type="torch.Tensor">
+  Optional point cloud for global geometric memory initialization. Shape `(N, 3)` or `(N, 6)` with RGB.
+</ParamField>
+
+<ParamField path="return_dict" type="bool" default="True">
+  Whether to return a ModelOutput object or a plain tuple.
+</ParamField>
+
+<ResponseField name="loss" type="torch.Tensor">
+  Training loss value.
+</ResponseField>
+
+<ResponseField name="predicted_noise" type="torch.Tensor">
+  Predicted noise from the diffusion process, shape `(B, T, C, H, W)`.
+</ResponseField>
+
+<ResponseField name="memory_features" type="Dict[str, torch.Tensor]">
+  Features extracted from both memory modules for analysis.
+</ResponseField>
+
+#### generate
+
+Generate videos from input conditioning. See [Inference API](/api/inference) for detailed usage.
+
+```python
+generate(
+    condition_image: torch.Tensor,
+    camera_trajectory: CameraTrajectory,
+    num_frames: int = 16,
+    num_inference_steps: int = 50,
+    guidance_scale: float = 7.5,
+    point_cloud: Optional[torch.Tensor] = None,
+    generator: Optional[torch.Generator] = None
+) -> torch.Tensor
+```
+
+<ParamField path="condition_image" type="torch.Tensor" required>
+  Conditioning image (perspective or panoramic), shape `(C, H, W)` or `(B, C, H, W)`.
+</ParamField>
+
+<ParamField path="camera_trajectory" type="CameraTrajectory" required>
+  Camera trajectory defining the viewpoints for video generation.
+</ParamField>
+
+<ParamField path="num_frames" type="int" default="16">
+  Number of frames to generate in the output video.
+</ParamField>
+
+<ParamField path="num_inference_steps" type="int" default="50">
+  Number of denoising steps in the diffusion process.
+</ParamField>
+
+<ParamField path="guidance_scale" type="float" default="7.5">
+  Classifier-free guidance scale for controlling generation fidelity.
+</ParamField>
+
+<ParamField path="point_cloud" type="torch.Tensor">
+  Optional initial point cloud for geometric conditioning.
+</ParamField>
+
+<ParamField path="generator" type="torch.Generator">
+  Random generator for reproducibility.
+</ParamField>
+
+<ResponseField name="output" type="torch.Tensor">
+  Generated video frames, shape `(num_frames, C, H, W)`.
+</ResponseField>
+
+#### update_geometric_memory
+
+Incrementally update the global geometric memory with new observations.
+
+```python
+update_geometric_memory(
+    new_point_cloud: torch.Tensor,
+    camera_pose: torch.Tensor,
+    merge_strategy: str = "incremental"
+) -> None
+```
+
+<ParamField path="new_point_cloud" type="torch.Tensor" required>
+  New point cloud observations to integrate, shape `(N, 3)` or `(N, 6)`.
+</ParamField>
+
+<ParamField path="camera_pose" type="torch.Tensor" required>
+  Camera pose for the new observations, shape `(4, 4)` transformation matrix.
+</ParamField>
+
+<ParamField path="merge_strategy" type="str" default="incremental">
+  Strategy for merging point clouds: "incremental", "replace", or "weighted".
+</ParamField>
+
+#### extract_features
+
+Extract feature representations from the model at different stages.
+
+```python
+extract_features(
+    images: torch.Tensor,
+    camera_params: CameraParameters,
+    layer_indices: Optional[List[int]] = None
+) -> Dict[str, torch.Tensor]
+```
+
+<ParamField path="images" type="torch.Tensor" required>
+  Input images, shape `(B, T, C, H, W)`.
+</ParamField>
+
+<ParamField path="camera_params" type="CameraParameters" required>
+  Camera parameters for the input views.
+</ParamField>
+
+<ParamField path="layer_indices" type="List[int]">
+  Specific layer indices to extract features from. If None, extracts from all layers.
+</ParamField>
+
+<ResponseField name="features" type="Dict[str, torch.Tensor]">
+  Dictionary mapping layer names to feature tensors.
+</ResponseField>
+
+## Properties
+
+### memory_state
+
+Access the current state of geometric memory modules.
+
+```python
+@property
+memory_state() -> Dict[str, Any]
+```
+
+<ResponseField name="global_memory" type="Dict[str, Any]">
+  Current state of global geometric memory including:
+  - Point cloud data
+  - Feature embeddings
+  - Spatial index structure
+</ResponseField>
+
+<ResponseField name="spatial_memory" type="Dict[str, Any]">
+  Current state of spatial-stereo memory including:
+  - Memory bank contents
+  - Correspondence mappings
+  - Attention masks
+</ResponseField>
+
+### config
+
+Model configuration dictionary.
+
+```python
+@property
+config() -> Dict[str, Any]
+```
+
+## Example Usage
+
+<CodeGroup>
+
+```python Basic Initialization
+import torch
+from worldstereo import WorldStereo, CameraParameters
+
+# Initialize model
+model = WorldStereo(
+    vdm_config={
+        "layers": 12,
+        "dim": 768,
+        "num_heads": 12,
+        "timesteps": 1000
+    },
+    global_memory_config={
+        "point_cloud_dim": 256,
+        "num_neighbors": 32,
+        "update_frequency": "per_frame"
+    },
+    spatial_memory_config={
+        "memory_size": 1024,
+        "num_correspondences": 64,
+        "attention_window": 7
+    },
+    pretrained_path="path/to/weights.pth",
+    device="cuda"
+)
+```
+
+```python Training Forward Pass
+# Prepare training data
+images = torch.randn(4, 16, 3, 256, 256).cuda()  # 4 batches, 16 frames
+camera_params = CameraParameters(
+    intrinsics=torch.eye(3).cuda(),
+    extrinsics=torch.eye(4).cuda()
+)
+timesteps = torch.randint(0, 1000, (4,)).cuda()
+
+# Forward pass
+output = model.forward(
+    images=images,
+    camera_params=camera_params,
+    timesteps=timesteps
+)
+
+loss = output.loss
+loss.backward()
+```
+
+```python Video Generation
+# Load conditioning image
+condition_image = load_image("scene.jpg").cuda()
+
+# Define camera trajectory
+from worldstereo import CameraTrajectory
+
+trajectory = CameraTrajectory.from_waypoints([
+    {"position": [0, 0, 0], "rotation": [0, 0, 0]},
+    {"position": [1, 0, 0], "rotation": [0, 15, 0]},
+    {"position": [2, 0, 0], "rotation": [0, 30, 0]}
+], num_frames=16)
+
+# Generate video
+generated_video = model.generate(
+    condition_image=condition_image,
+    camera_trajectory=trajectory,
+    num_frames=16,
+    guidance_scale=7.5
+)
+```
+
+```python Incremental Memory Update
+# Generate initial video
+video_1 = model.generate(
+    condition_image=image_1,
+    camera_trajectory=trajectory_1
+)
+
+# Extract point cloud from generated video
+point_cloud_1 = extract_point_cloud(video_1)
+
+# Update geometric memory
+model.update_geometric_memory(
+    new_point_cloud=point_cloud_1,
+    camera_pose=trajectory_1.final_pose,
+    merge_strategy="incremental"
+)
+
+# Generate from new viewpoint with updated memory
+video_2 = model.generate(
+    condition_image=image_2,
+    camera_trajectory=trajectory_2
+)
+```
+
+</CodeGroup>
+
+## Related Documentation
+
+<CardGroup cols={2}>
+  <Card title="Memory Modules" icon="memory" href="/api/memory-modules">
+    Detailed documentation for geometric memory components
+  </Card>
+  <Card title="Inference API" icon="wand-magic-sparkles" href="/api/inference">
+    High-level interface for video generation
+  </Card>
+  <Card title="Camera Control" icon="camera" href="/api/camera-control">
+    Camera parameters and trajectory configuration
+  </Card>
+  <Card title="3D Reconstruction" icon="cube" href="/api/reconstruction">
+    Reconstruct 3D scenes from generated videos
+  </Card>
+</CardGroup>

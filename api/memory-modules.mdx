@@ -1,0 +1,554 @@
+---
+title: 'Memory Modules'
+description: 'Global geometric and spatial-stereo memory modules for 3D-aware video generation'
+---
+
+## Overview
+
+WorldStereo employs two dedicated geometric memory modules that enable multi-view-consistent video generation:
+
+1. **Global Geometric Memory**: Provides coarse structural priors through incrementally updated point clouds
+2. **Spatial-Stereo Memory**: Constrains attention receptive fields with 3D correspondence for fine-grained details
+
+These modules work together to inject 3D geometric understanding into the video generation process, enabling precise camera control and high-quality 3D reconstruction.
+
+<Note>
+  The memory modules operate as control branches that integrate with the VDM backbone without requiring joint training, ensuring efficiency and modularity.
+</Note>
+
+## Global Geometric Memory
+
+The global geometric memory module maintains a dynamic 3D representation of the scene through incrementally updated point clouds. It provides coarse structural priors that guide the video generation process.
+
+### Class: GlobalGeometricMemory
+
+#### Constructor
+
+```python
+GlobalGeometricMemory(
+    point_cloud_dim: int = 256,
+    feature_dim: int = 768,
+    num_neighbors: int = 32,
+    update_frequency: str = "per_frame",
+    spatial_index: str = "kd_tree",
+    max_points: int = 100000
+)
+```
+
+<ParamField path="point_cloud_dim" type="int" default="256">
+  Dimension of point cloud feature embeddings.
+</ParamField>
+
+<ParamField path="feature_dim" type="int" default="768">
+  Dimension of output features to inject into the VDM.
+</ParamField>
+
+<ParamField path="num_neighbors" type="int" default="32">
+  Number of nearest neighbors to consider for each query point.
+</ParamField>
+
+<ParamField path="update_frequency" type="str" default="per_frame">
+  How often to update the point cloud: "per_frame", "per_step", or "manual".
+</ParamField>
+
+<ParamField path="spatial_index" type="str" default="kd_tree">
+  Spatial indexing structure for efficient nearest neighbor search: "kd_tree", "ball_tree", or "cuda_knn".
+</ParamField>
+
+<ParamField path="max_points" type="int" default="100000">
+  Maximum number of points to maintain in memory (oldest points are removed).
+</ParamField>
+
+#### Methods
+
+##### initialize
+
+Initialize or reset the memory with a point cloud.
+
+```python
+initialize(
+    point_cloud: torch.Tensor,
+    features: Optional[torch.Tensor] = None,
+    colors: Optional[torch.Tensor] = None
+) -> None
+```
+
+<ParamField path="point_cloud" type="torch.Tensor" required>
+  Initial point cloud coordinates, shape `(N, 3)`.
+</ParamField>
+
+<ParamField path="features" type="torch.Tensor">
+  Optional per-point features, shape `(N, D)`. If not provided, features are computed from coordinates.
+</ParamField>
+
+<ParamField path="colors" type="torch.Tensor">
+  Optional RGB colors for each point, shape `(N, 3)`.
+</ParamField>
+
+##### update
+
+Incrementally update the memory with new observations.
+
+```python
+update(
+    new_points: torch.Tensor,
+    camera_pose: torch.Tensor,
+    new_features: Optional[torch.Tensor] = None,
+    merge_threshold: float = 0.01
+) -> Dict[str, Any]
+```
+
+<ParamField path="new_points" type="torch.Tensor" required>
+  New point cloud observations, shape `(M, 3)`.
+</ParamField>
+
+<ParamField path="camera_pose" type="torch.Tensor" required>
+  Camera pose for the observations, shape `(4, 4)` transformation matrix.
+</ParamField>
+
+<ParamField path="new_features" type="torch.Tensor">
+  Optional features for new points, shape `(M, D)`.
+</ParamField>
+
+<ParamField path="merge_threshold" type="float" default="0.01">
+  Distance threshold for merging nearby points (in scene units).
+</ParamField>
+
+<ResponseField name="num_added" type="int">
+  Number of new points added to memory.
+</ResponseField>
+
+<ResponseField name="num_merged" type="int">
+  Number of points merged with existing points.
+</ResponseField>
+
+<ResponseField name="total_points" type="int">
+  Total number of points in memory after update.
+</ResponseField>
+
+##### query
+
+Query the memory for features at specific 3D locations.
+
+```python
+query(
+    query_points: torch.Tensor,
+    camera_params: CameraParameters,
+    aggregation: str = "mean"
+) -> torch.Tensor
+```
+
+<ParamField path="query_points" type="torch.Tensor" required>
+  3D query locations, shape `(B, Q, 3)` where Q is the number of query points.
+</ParamField>
+
+<ParamField path="camera_params" type="CameraParameters" required>
+  Current camera parameters for view-dependent feature computation.
+</ParamField>
+
+<ParamField path="aggregation" type="str" default="mean">
+  How to aggregate neighbor features: "mean", "max", "weighted", or "attention".
+</ParamField>
+
+<ResponseField name="features" type="torch.Tensor">
+  Aggregated features for query points, shape `(B, Q, feature_dim)`.
+</ResponseField>
+
+##### inject_to_latent
+
+Inject geometric memory features into the VDM latent representation.
+
+```python
+inject_to_latent(
+    latent: torch.Tensor,
+    camera_params: CameraParameters,
+    injection_method: str = "cross_attention"
+) -> torch.Tensor
+```
+
+<ParamField path="latent" type="torch.Tensor" required>
+  VDM latent representation, shape `(B, T, C, H, W)`.
+</ParamField>
+
+<ParamField path="camera_params" type="CameraParameters" required>
+  Camera parameters for current viewpoint.
+</ParamField>
+
+<ParamField path="injection_method" type="str" default="cross_attention">
+  Method for feature injection: "cross_attention", "addition", or "concatenation".
+</ParamField>
+
+<ResponseField name="latent_with_memory" type="torch.Tensor">
+  Latent representation with injected geometric features, shape `(B, T, C, H, W)`.
+</ResponseField>
+
+#### Properties
+
+```python
+@property
+point_cloud() -> torch.Tensor
+    # Returns current point cloud, shape (N, 3)
+
+@property
+point_features() -> torch.Tensor
+    # Returns point features, shape (N, feature_dim)
+
+@property
+num_points() -> int
+    # Returns current number of points in memory
+```
+
+### Example Usage
+
+<CodeGroup>
+
+```python Initialize and Query
+import torch
+from worldstereo import GlobalGeometricMemory, CameraParameters
+
+# Create memory module
+global_memory = GlobalGeometricMemory(
+    point_cloud_dim=256,
+    feature_dim=768,
+    num_neighbors=32
+)
+
+# Initialize with point cloud
+initial_points = torch.randn(5000, 3).cuda()
+global_memory.initialize(initial_points)
+
+# Query features
+query_points = torch.randn(1, 100, 3).cuda()
+camera_params = CameraParameters(...)
+features = global_memory.query(
+    query_points=query_points,
+    camera_params=camera_params,
+    aggregation="weighted"
+)
+```
+
+```python Incremental Updates
+# Generate video and extract points
+video = model.generate(...)
+new_points = extract_point_cloud(video)  # (M, 3)
+
+# Update memory incrementally
+update_info = global_memory.update(
+    new_points=new_points,
+    camera_pose=current_pose,
+    merge_threshold=0.01
+)
+
+print(f"Added {update_info['num_added']} points")
+print(f"Total points: {update_info['total_points']}")
+```
+
+```python Feature Injection
+# Get VDM latent
+latent = vdm.encode(images)  # (B, T, C, H, W)
+
+# Inject geometric memory
+latent_with_geometry = global_memory.inject_to_latent(
+    latent=latent,
+    camera_params=camera_params,
+    injection_method="cross_attention"
+)
+
+# Continue with diffusion process
+denoised = vdm.denoise(latent_with_geometry, ...)
+```
+
+</CodeGroup>
+
+## Spatial-Stereo Memory
+
+The spatial-stereo memory module maintains a memory bank of fine-grained visual features with 3D correspondence information. It constrains the model's attention receptive fields to focus on geometrically consistent regions.
+
+### Class: SpatialStereoMemory
+
+#### Constructor
+
+```python
+SpatialStereoMemory(
+    memory_size: int = 1024,
+    feature_dim: int = 768,
+    num_correspondences: int = 64,
+    attention_window: int = 7,
+    correspondence_threshold: float = 0.5,
+    update_strategy: str = "fifo"
+)
+```
+
+<ParamField path="memory_size" type="int" default="1024">
+  Maximum number of feature vectors in the memory bank.
+</ParamField>
+
+<ParamField path="feature_dim" type="int" default="768">
+  Dimension of feature vectors.
+</ParamField>
+
+<ParamField path="num_correspondences" type="int" default="64">
+  Number of 3D correspondences to maintain per memory entry.
+</ParamField>
+
+<ParamField path="attention_window" type="int" default="7">
+  Spatial window size for constrained attention (in pixels).
+</ParamField>
+
+<ParamField path="correspondence_threshold" type="float" default="0.5">
+  Confidence threshold for accepting 3D correspondences.
+</ParamField>
+
+<ParamField path="update_strategy" type="str" default="fifo">
+  Memory replacement strategy: "fifo", "lru", or "importance_based".
+</ParamField>
+
+#### Methods
+
+##### add_to_memory
+
+Add new features and correspondences to the memory bank.
+
+```python
+add_to_memory(
+    features: torch.Tensor,
+    correspondences: torch.Tensor,
+    confidence: torch.Tensor,
+    metadata: Optional[Dict[str, Any]] = None
+) -> List[int]
+```
+
+<ParamField path="features" type="torch.Tensor" required>
+  Feature vectors to add, shape `(N, feature_dim)`.
+</ParamField>
+
+<ParamField path="correspondences" type="torch.Tensor" required>
+  3D correspondence locations, shape `(N, num_correspondences, 3)`.
+</ParamField>
+
+<ParamField path="confidence" type="torch.Tensor" required>
+  Confidence scores for correspondences, shape `(N, num_correspondences)`.
+</ParamField>
+
+<ParamField path="metadata" type="Dict[str, Any]">
+  Optional metadata (camera pose, frame index, etc.).
+</ParamField>
+
+<ResponseField name="indices" type="List[int]">
+  Memory indices where features were stored.
+</ResponseField>
+
+##### constrained_attention
+
+Compute attention with spatial-stereo constraints.
+
+```python
+constrained_attention(
+    query: torch.Tensor,
+    query_points: torch.Tensor,
+    camera_params: CameraParameters,
+    use_correspondence_mask: bool = True
+) -> Tuple[torch.Tensor, torch.Tensor]
+```
+
+<ParamField path="query" type="torch.Tensor" required>
+  Query features, shape `(B, N, feature_dim)`.
+</ParamField>
+
+<ParamField path="query_points" type="torch.Tensor" required>
+  3D locations of query points, shape `(B, N, 3)`.
+</ParamField>
+
+<ParamField path="camera_params" type="CameraParameters" required>
+  Current camera parameters.
+</ParamField>
+
+<ParamField path="use_correspondence_mask" type="bool" default="True">
+  Whether to apply correspondence-based attention masking.
+</ParamField>
+
+<ResponseField name="output" type="torch.Tensor">
+  Attention output, shape `(B, N, feature_dim)`.
+</ResponseField>
+
+<ResponseField name="attention_weights" type="torch.Tensor">
+  Attention weights for visualization, shape `(B, N, memory_size)`.
+</ResponseField>
+
+##### retrieve
+
+Retrieve relevant memory entries based on 3D proximity.
+
+```python
+retrieve(
+    query_points: torch.Tensor,
+    camera_params: CameraParameters,
+    top_k: int = 32
+) -> Tuple[torch.Tensor, torch.Tensor]
+```
+
+<ParamField path="query_points" type="torch.Tensor" required>
+  3D query locations, shape `(B, N, 3)`.
+</ParamField>
+
+<ParamField path="camera_params" type="CameraParameters" required>
+  Camera parameters for view-dependent retrieval.
+</ParamField>
+
+<ParamField path="top_k" type="int" default="32">
+  Number of nearest memory entries to retrieve.
+</ParamField>
+
+<ResponseField name="features" type="torch.Tensor">
+  Retrieved feature vectors, shape `(B, N, top_k, feature_dim)`.
+</ResponseField>
+
+<ResponseField name="indices" type="torch.Tensor">
+  Indices of retrieved memory entries, shape `(B, N, top_k)`.
+</ResponseField>
+
+##### clear
+
+Clear the memory bank.
+
+```python
+clear() -> None
+```
+
+#### Properties
+
+```python
+@property
+memory_bank() -> torch.Tensor
+    # Returns current memory features, shape (memory_size, feature_dim)
+
+@property
+correspondence_map() -> torch.Tensor
+    # Returns 3D correspondences, shape (memory_size, num_correspondences, 3)
+
+@property
+occupancy() -> float
+    # Returns fraction of memory bank currently in use (0.0 to 1.0)
+```
+
+### Example Usage
+
+<CodeGroup>
+
+```python Initialize and Add Features
+from worldstereo import SpatialStereoMemory
+
+# Create memory module
+spatial_memory = SpatialStereoMemory(
+    memory_size=1024,
+    feature_dim=768,
+    num_correspondences=64,
+    attention_window=7
+)
+
+# Extract features from initial frame
+features = model.extract_features(image)  # (N, 768)
+correspondences = compute_correspondences(image)  # (N, 64, 3)
+confidence = compute_confidence(correspondences)  # (N, 64)
+
+# Add to memory
+indices = spatial_memory.add_to_memory(
+    features=features,
+    correspondences=correspondences,
+    confidence=confidence
+)
+```
+
+```python Constrained Attention
+# Query features from new frame
+query_features = model.extract_features(new_image)  # (1, M, 768)
+query_points = estimate_3d_points(new_image)  # (1, M, 3)
+
+# Compute attention with spatial-stereo constraints
+output, attn_weights = spatial_memory.constrained_attention(
+    query=query_features,
+    query_points=query_points,
+    camera_params=camera_params,
+    use_correspondence_mask=True
+)
+
+# Use output for refinement
+refined_features = query_features + output
+```
+
+```python Memory Retrieval
+# Retrieve relevant features for generation
+query_points = sample_points_on_camera_rays(camera_params, num_samples=100)
+
+retrieved_features, retrieved_indices = spatial_memory.retrieve(
+    query_points=query_points,
+    camera_params=camera_params,
+    top_k=32
+)
+
+# Use retrieved features for conditioning
+print(f"Memory occupancy: {spatial_memory.occupancy:.2%}")
+print(f"Retrieved from indices: {retrieved_indices[0, 0, :5]}")
+```
+
+</CodeGroup>
+
+## Memory Integration
+
+The two memory modules work together during video generation:
+
+<Steps>
+  <Step title="Global Geometric Memory">
+    Provides coarse 3D structure from the point cloud, guiding overall scene geometry and camera control.
+  </Step>
+  <Step title="Spatial-Stereo Memory">
+    Refines generation with fine-grained details by constraining attention to geometrically consistent regions.
+  </Step>
+  <Step title="Incremental Updates">
+    Both memories are updated as new frames are generated, improving consistency across multi-view sequences.
+  </Step>
+</Steps>
+
+<Note>
+  The memory modules operate independently but can be queried in parallel for optimal performance. The global memory focuses on structure, while spatial memory handles texture and detail.
+</Note>
+
+## Performance Considerations
+
+<Accordion title="Memory Management">
+  - Global memory uses spatial indexing (KD-tree) for efficient nearest neighbor search
+  - Spatial memory implements FIFO or LRU caching to maintain bounded size
+  - Point cloud merging reduces redundancy and memory footprint
+  - GPU-accelerated operations for real-time performance
+</Accordion>
+
+<Accordion title="Scalability">
+  - Global memory can handle 100K+ points efficiently
+  - Spatial memory bank size is configurable based on available GPU memory
+  - Batch processing for multiple queries reduces overhead
+  - Incremental updates avoid full recomputation
+</Accordion>
+
+<Accordion title="Quality vs. Efficiency Trade-offs">
+  - Increase `num_neighbors` for better geometric conditioning (slower)
+  - Increase `memory_size` for more detailed spatial memory (more GPU memory)
+  - Larger `attention_window` improves detail but reduces speed
+  - More `num_correspondences` increases accuracy but computation cost
+</Accordion>
+
+## Related Documentation
+
+<CardGroup cols={2}>
+  <Card title="WorldStereo Model" icon="brain" href="/api/worldstereo-model">
+    Main model class that integrates memory modules
+  </Card>
+  <Card title="Inference API" icon="wand-magic-sparkles" href="/api/inference">
+    High-level generation interface
+  </Card>
+  <Card title="Global Geometric Memory" icon="globe" href="/concepts/global-geometric-memory">
+    Conceptual overview
+  </Card>
+  <Card title="Spatial-Stereo Memory" icon="layer-group" href="/concepts/spatial-stereo-memory">
+    Conceptual overview
+  </Card>
+</CardGroup>

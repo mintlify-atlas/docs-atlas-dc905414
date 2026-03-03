@@ -1,0 +1,379 @@
+---
+title: Diverse Scene Generation
+description: Generate diverse scenes from perspective and panoramic images using WorldStereo as a world model
+---
+
+WorldStereo acts as a powerful world model for diverse scene generation tasks, supporting both perspective and panoramic images as input. This guide covers the framework's capabilities in generating varied scene types with high-fidelity 3D results.
+
+## Overview
+
+As a world model, WorldStereo understands and generates 3D-consistent scenes across different input modalities and generation tasks. The framework's geometric memory modules enable it to maintain spatial coherence regardless of the scene type or input format.
+
+<Info>
+WorldStereo's versatility as a world model means you can tackle diverse generation tasks with a unified framework, from object-centric scenes to large-scale environments.
+</Info>
+
+## Input Modalities
+
+### Perspective Images
+
+Standard camera images with a limited field of view:
+
+**Characteristics**
+- Traditional camera viewpoint (typically 60-90° FOV)
+- Natural perspective projection
+- Common input format for most vision tasks
+
+**Use Cases**
+- Object-centric scene generation
+- Room-scale environment creation
+- Localized scene exploration
+
+<Tip>
+Perspective images work best for scenes with clear focal subjects and bounded environments.
+</Tip>
+
+### Panoramic Images
+
+360-degree images capturing complete surrounding environments:
+
+**Characteristics**
+- Full spherical coverage (360° horizontal, often 180° vertical)
+- Equirectangular or other panoramic projections
+- Complete environmental context
+
+**Use Cases**
+- Large-scale environment generation
+- Indoor scene reconstruction
+- Virtual tour creation
+
+<Note>
+Panoramic inputs provide WorldStereo with complete scene context, enabling more informed generation of consistent multi-view outputs.
+</Note>
+
+## Scene Generation Tasks
+
+<Steps>
+  <Step title="Scene Exploration">
+    Starting from a single image (perspective or panoramic), generate new viewpoints to explore the scene. WorldStereo maintains consistency as it generates novel views based on camera trajectories.
+  </Step>
+  
+  <Step title="Scene Completion">
+    Extend partially visible scenes by generating content in unexplored regions. The geometric memory modules ensure new content aligns with existing structure.
+  </Step>
+  
+  <Step title="Scene Variation">
+    Generate variations of a scene while maintaining geometric structure. Useful for creating diverse datasets or exploring design alternatives.
+  </Step>
+  
+  <Step title="Multi-Scale Generation">
+    Generate scenes at different scales, from close-up object details to wide environmental contexts, all with consistent 3D geometry.
+  </Step>
+</Steps>
+
+## Generation Workflows
+
+### Perspective-to-Multi-View
+
+Generate multiple viewpoints from a single perspective image:
+
+```
+Single Perspective Image → Camera Trajectory Definition → Multi-View Video Generation → 3D Scene
+```
+
+**Workflow**
+1. Input a perspective image showing your subject or scene
+2. Define camera trajectories to explore the scene (orbits, arcs, linear paths)
+3. WorldStereo generates multi-view-consistent video frames
+4. Optionally reconstruct 3D geometry from generated views
+
+**Applications**
+- Object visualization from single photos
+- Scene understanding and exploration
+- Novel view synthesis for limited-view inputs
+
+<Tip>
+For perspective inputs, design camera trajectories that stay within the scene bounds implied by the image content.
+</Tip>
+
+### Panoramic-to-3D
+
+Generate 3D environments from panoramic images:
+
+```
+Panoramic Image → Spatial Coverage Planning → Multi-View Generation → Environment Reconstruction
+```
+
+**Workflow**
+1. Input a 360° panoramic image of an environment
+2. Plan camera paths that explore the 3D space
+3. Generate multi-view videos from different positions within the environment
+4. Reconstruct complete 3D scene geometry
+
+**Applications**
+- Indoor environment modeling
+- Virtual reality scene creation
+- Architectural visualization
+
+<Warning>
+Panoramic images contain significant distortion at poles (top/bottom). Consider camera trajectories that avoid extreme vertical angles.
+</Warning>
+
+### Hybrid Multi-Modal Generation
+
+Combine different input types for comprehensive scene generation:
+
+**Workflow**
+1. Use panoramic images for environmental context
+2. Supplement with perspective images for detailed regions
+3. Generate consistent multi-view outputs across all inputs
+4. Merge into unified 3D representation
+
+**Benefits**
+- Leverage strengths of each input modality
+- Achieve both broad coverage and fine detail
+- Create more complete scene representations
+
+## Geometric Memory in Scene Generation
+
+### Global-Geometric Memory for Scene Structure
+
+The global-geometric memory maintains overall scene structure:
+
+**For Perspective Inputs**
+- Builds point cloud from visible content
+- Extrapolates structure for novel viewpoints
+- Ensures consistency with initial view geometry
+
+**For Panoramic Inputs**
+- Leverages complete environmental coverage
+- Establishes comprehensive spatial structure
+- Enables consistent generation throughout the space
+
+<Info>
+Panoramic inputs allow the global-geometric memory to establish more complete scene structure from the start, potentially improving consistency.
+</Info>
+
+### Spatial-Stereo Memory for Details
+
+The spatial-stereo memory ensures detail consistency:
+
+- Maintains fine-grained features across generated views
+- Uses 3D correspondence to align details geometrically
+- Ensures texture and feature consistency in multi-view outputs
+
+## Scene Types and Capabilities
+
+### Object-Centric Scenes
+
+**Input**: Perspective images of objects
+
+**Capabilities**
+- Generate complete 360° views of objects
+- Maintain object structure and appearance consistency
+- Enable high-quality object reconstruction
+
+**Optimal Trajectories**
+- Circular orbits around objects
+- Hemisphere coverage for top/bottom views
+- Varying distances for scale exploration
+
+### Indoor Environments
+
+**Input**: Perspective or panoramic room images
+
+**Capabilities**
+- Explore room layouts from multiple positions
+- Generate consistent views of interior spaces
+- Reconstruct complete room geometry
+
+**Optimal Trajectories**
+- Grid patterns covering floor space
+- Height variations to capture vertical structure
+- Wall-following paths for boundary coverage
+
+<Tip>
+For indoor scenes, panoramic inputs often provide superior results by capturing complete room context.
+</Tip>
+
+### Outdoor Environments
+
+**Input**: Perspective or panoramic outdoor scenes
+
+**Capabilities**
+- Generate large-scale environment views
+- Maintain consistency across distant viewpoints
+- Support both ground-level and elevated perspectives
+
+**Optimal Trajectories**
+- Forward motion along paths
+- Systematic coverage patterns for areas
+- Altitude variations for aerial perspectives
+
+### Architectural Scenes
+
+**Input**: Building exteriors or interiors
+
+**Capabilities**
+- Generate architectural visualizations
+- Explore building designs from multiple angles
+- Reconstruct architectural geometry
+
+**Optimal Trajectories**
+- Facade coverage with parallel camera paths
+- Orbital paths around buildings
+- Interior walkthroughs for spaces
+
+## World Model Capabilities
+
+### Spatial Understanding
+
+WorldStereo demonstrates understanding of 3D space:
+
+- **Depth Reasoning**: Generates content with correct depth relationships
+- **Occlusion Handling**: Properly handles object occlusions across viewpoints
+- **Geometric Constraints**: Respects physical geometry of scenes
+
+### Content Coherence
+
+Maintains consistency across diverse generation scenarios:
+
+- **Appearance Consistency**: Objects maintain appearance across views
+- **Lighting Coherence**: Illumination remains consistent with scene geometry
+- **Semantic Understanding**: Preserves semantic relationships between scene elements
+
+<Note>
+The geometric memory modules enable WorldStereo to function as a true world model, maintaining both geometric and semantic coherence.
+</Note>
+
+### Generalization Across Scenes
+
+Performs effectively across different scene types:
+
+- Adapts to various input modalities (perspective/panoramic)
+- Handles diverse scales (objects to environments)
+- Works with different scene complexities
+
+## Best Practices for Scene Generation
+
+### Input Selection
+
+1. **Choose Appropriate Modality**
+   - Perspective: Object-centric or localized scenes
+   - Panoramic: Environmental or large-scale scenes
+
+2. **Ensure Input Quality**
+   - High resolution for better detail capture
+   - Good lighting and exposure
+   - Clear, well-defined content
+
+3. **Consider Scene Characteristics**
+   - Well-textured scenes generate better than textureless
+   - Clear geometric structure aids consistency
+   - Avoid extreme lighting conditions (very dark or overexposed)
+
+### Trajectory Planning
+
+1. **Match Trajectory to Scene Type**
+   - Object scenes: Orbits and arcs
+   - Environments: Coverage patterns and paths
+   - Architecture: Structured exploration
+
+2. **Ensure Adequate Coverage**
+   - Plan for overlapping views
+   - Cover all regions of interest
+   - Balance coverage with trajectory length
+
+3. **Maintain Smoothness**
+   - Avoid abrupt camera movements
+   - Use gradual transitions
+   - Consider realistic camera motion
+
+<Tip>
+Start with simpler scenes and trajectories to understand WorldStereo's behavior before tackling complex generation tasks.
+</Tip>
+
+### Quality Optimization
+
+1. **Leverage Scene Context**
+   - Panoramic inputs provide more context
+   - Use context to inform trajectory planning
+   - Consider multi-image inputs for complex scenes
+
+2. **Iterate and Refine**
+   - Generate initial views to assess quality
+   - Adjust trajectories based on results
+   - Use intermediate outputs to guide refinement
+
+3. **Balance Consistency and Diversity**
+   - Prioritize consistency for reconstruction tasks
+   - Allow more variation for creative exploration
+   - Adjust based on intended use case
+
+## Integration with Downstream Tasks
+
+### 3D Reconstruction
+
+Generated scenes are reconstruction-ready:
+
+- Multi-view consistency enables reliable reconstruction
+- Known camera parameters streamline pipeline
+- See [3D Reconstruction guide](/guides/3d-reconstruction) for details
+
+### Novel View Synthesis
+
+Use as a generative prior for view synthesis:
+
+- Generate training data for neural view synthesis methods
+- Provide geometric priors for NeRF or 3DGS
+- Enable view synthesis in limited-data scenarios
+
+### Virtual Environment Creation
+
+Build complete virtual environments:
+
+- Start from single images or panoramas
+- Generate comprehensive multi-view coverage
+- Reconstruct for VR/AR applications
+
+### Dataset Generation
+
+Create synthetic datasets for training:
+
+- Generate diverse viewpoints automatically
+- Provide ground-truth camera parameters
+- Create multi-view datasets at scale
+
+<Info>
+WorldStereo's effectiveness across diverse scene generation tasks has been validated through extensive experiments, demonstrating high-fidelity 3D results.
+</Info>
+
+## Expected Performance
+
+### Visual Quality
+
+- High-fidelity video generation comparable to state-of-the-art VDMs
+- Realistic appearance and detail preservation
+- Proper handling of complex visual effects (reflections, transparency, etc.)
+
+### Geometric Consistency
+
+- Superior multi-view consistency compared to baseline approaches
+- Accurate depth relationships across viewpoints
+- Reduced geometric artifacts in generated content
+
+### Versatility
+
+- Effective across different input modalities (perspective and panoramic)
+- Handles diverse scene types and scales
+- Adapts to various generation tasks within a unified framework
+
+### Efficiency
+
+- Benefits from control branch architecture
+- Faster than joint-training approaches
+- Leverages pre-trained VDM backbones efficiently
+
+<Note>
+As a world model, WorldStereo demonstrates impressive effectiveness in tackling diverse scene generation tasks, from perspective to panoramic inputs, with consistently high-fidelity 3D results.
+</Note>
