@@ -1,0 +1,89 @@
+{
+  "projectType": "ai-ml",
+  "projectName": "WorldStereo",
+  "projectDescription": "A framework that bridges camera-guided video generation and 3D reconstruction via geometric memory modules.",
+  "theme": "aspen",
+  "primaryColor": "#3B82F6",
+  "lightColor": "#60A5FA",
+  "darkColor": "#2563EB",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "installation",
+              "quickstart"
+            ]
+          },
+          {
+            "group": "Core Concepts",
+            "pages": [
+              "concepts/overview",
+              "concepts/global-geometric-memory",
+              "concepts/spatial-stereo-memory",
+              "concepts/video-diffusion"
+            ]
+          },
+          {
+            "group": "Guides",
+            "pages": [
+              "guides/camera-guided-generation",
+              "guides/3d-reconstruction",
+              "guides/scene-generation"
+            ]
+          },
+          {
+            "group": "Research",
+            "pages": [
+              "research/paper",
+              "research/architecture",
+              "research/benchmarks"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Model API",
+            "pages": [
+              "api/worldstereo-model",
+              "api/memory-modules",
+              "api/inference"
+            ]
+          },
+          {
+            "group": "Utilities",
+            "pages": [
+              "api/camera-control",
+              "api/reconstruction"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Camera-guided video generation with precise control",
+    "Multi-view-consistent video output",
+    "Global geometric memory with incremental point cloud updates",
+    "Spatial-stereo memory for fine-grained detail preservation",
+    "High-quality 3D scene reconstruction",
+    "Support for both perspective and panoramic image inputs",
+    "Efficient control branch design without joint training"
+  ],
+  "publicApiSurface": [
+    "WorldStereo model class",
+    "Global geometric memory module",
+    "Spatial-stereo memory module",
+    "Camera control interface",
+    "3D reconstruction pipeline",
+    "Multi-view video generation",
+    "Point cloud integration"
+  ]
+}
